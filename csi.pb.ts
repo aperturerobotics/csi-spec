@@ -12430,7 +12430,9 @@ export interface Identity {
 
 export class IdentityClientImpl implements Identity {
   private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly service: string;
+  constructor(rpc: Rpc, opts?: { service?: string }) {
+    this.service = opts?.service || "csi.v1.Identity";
     this.rpc = rpc;
     this.GetPluginInfo = this.GetPluginInfo.bind(this);
     this.GetPluginCapabilities = this.GetPluginCapabilities.bind(this);
@@ -12438,19 +12440,19 @@ export class IdentityClientImpl implements Identity {
   }
   GetPluginInfo(request: GetPluginInfoRequest): Promise<GetPluginInfoResponse> {
     const data = GetPluginInfoRequest.encode(request).finish();
-    const promise = this.rpc.request("csi.v1.Identity", "GetPluginInfo", data);
+    const promise = this.rpc.request(this.service, "GetPluginInfo", data);
     return promise.then((data) => GetPluginInfoResponse.decode(new _m0.Reader(data)));
   }
 
   GetPluginCapabilities(request: GetPluginCapabilitiesRequest): Promise<GetPluginCapabilitiesResponse> {
     const data = GetPluginCapabilitiesRequest.encode(request).finish();
-    const promise = this.rpc.request("csi.v1.Identity", "GetPluginCapabilities", data);
+    const promise = this.rpc.request(this.service, "GetPluginCapabilities", data);
     return promise.then((data) => GetPluginCapabilitiesResponse.decode(new _m0.Reader(data)));
   }
 
   Probe(request: ProbeRequest): Promise<ProbeResponse> {
     const data = ProbeRequest.encode(request).finish();
-    const promise = this.rpc.request("csi.v1.Identity", "Probe", data);
+    const promise = this.rpc.request(this.service, "Probe", data);
     return promise.then((data) => ProbeResponse.decode(new _m0.Reader(data)));
   }
 }
@@ -12505,7 +12507,9 @@ export interface Controller {
 
 export class ControllerClientImpl implements Controller {
   private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly service: string;
+  constructor(rpc: Rpc, opts?: { service?: string }) {
+    this.service = opts?.service || "csi.v1.Controller";
     this.rpc = rpc;
     this.CreateVolume = this.CreateVolume.bind(this);
     this.DeleteVolume = this.DeleteVolume.bind(this);
@@ -12523,79 +12527,79 @@ export class ControllerClientImpl implements Controller {
   }
   CreateVolume(request: CreateVolumeRequest): Promise<CreateVolumeResponse> {
     const data = CreateVolumeRequest.encode(request).finish();
-    const promise = this.rpc.request("csi.v1.Controller", "CreateVolume", data);
+    const promise = this.rpc.request(this.service, "CreateVolume", data);
     return promise.then((data) => CreateVolumeResponse.decode(new _m0.Reader(data)));
   }
 
   DeleteVolume(request: DeleteVolumeRequest): Promise<DeleteVolumeResponse> {
     const data = DeleteVolumeRequest.encode(request).finish();
-    const promise = this.rpc.request("csi.v1.Controller", "DeleteVolume", data);
+    const promise = this.rpc.request(this.service, "DeleteVolume", data);
     return promise.then((data) => DeleteVolumeResponse.decode(new _m0.Reader(data)));
   }
 
   ControllerPublishVolume(request: ControllerPublishVolumeRequest): Promise<ControllerPublishVolumeResponse> {
     const data = ControllerPublishVolumeRequest.encode(request).finish();
-    const promise = this.rpc.request("csi.v1.Controller", "ControllerPublishVolume", data);
+    const promise = this.rpc.request(this.service, "ControllerPublishVolume", data);
     return promise.then((data) => ControllerPublishVolumeResponse.decode(new _m0.Reader(data)));
   }
 
   ControllerUnpublishVolume(request: ControllerUnpublishVolumeRequest): Promise<ControllerUnpublishVolumeResponse> {
     const data = ControllerUnpublishVolumeRequest.encode(request).finish();
-    const promise = this.rpc.request("csi.v1.Controller", "ControllerUnpublishVolume", data);
+    const promise = this.rpc.request(this.service, "ControllerUnpublishVolume", data);
     return promise.then((data) => ControllerUnpublishVolumeResponse.decode(new _m0.Reader(data)));
   }
 
   ValidateVolumeCapabilities(request: ValidateVolumeCapabilitiesRequest): Promise<ValidateVolumeCapabilitiesResponse> {
     const data = ValidateVolumeCapabilitiesRequest.encode(request).finish();
-    const promise = this.rpc.request("csi.v1.Controller", "ValidateVolumeCapabilities", data);
+    const promise = this.rpc.request(this.service, "ValidateVolumeCapabilities", data);
     return promise.then((data) => ValidateVolumeCapabilitiesResponse.decode(new _m0.Reader(data)));
   }
 
   ListVolumes(request: ListVolumesRequest): Promise<ListVolumesResponse> {
     const data = ListVolumesRequest.encode(request).finish();
-    const promise = this.rpc.request("csi.v1.Controller", "ListVolumes", data);
+    const promise = this.rpc.request(this.service, "ListVolumes", data);
     return promise.then((data) => ListVolumesResponse.decode(new _m0.Reader(data)));
   }
 
   GetCapacity(request: GetCapacityRequest): Promise<GetCapacityResponse> {
     const data = GetCapacityRequest.encode(request).finish();
-    const promise = this.rpc.request("csi.v1.Controller", "GetCapacity", data);
+    const promise = this.rpc.request(this.service, "GetCapacity", data);
     return promise.then((data) => GetCapacityResponse.decode(new _m0.Reader(data)));
   }
 
   ControllerGetCapabilities(request: ControllerGetCapabilitiesRequest): Promise<ControllerGetCapabilitiesResponse> {
     const data = ControllerGetCapabilitiesRequest.encode(request).finish();
-    const promise = this.rpc.request("csi.v1.Controller", "ControllerGetCapabilities", data);
+    const promise = this.rpc.request(this.service, "ControllerGetCapabilities", data);
     return promise.then((data) => ControllerGetCapabilitiesResponse.decode(new _m0.Reader(data)));
   }
 
   CreateSnapshot(request: CreateSnapshotRequest): Promise<CreateSnapshotResponse> {
     const data = CreateSnapshotRequest.encode(request).finish();
-    const promise = this.rpc.request("csi.v1.Controller", "CreateSnapshot", data);
+    const promise = this.rpc.request(this.service, "CreateSnapshot", data);
     return promise.then((data) => CreateSnapshotResponse.decode(new _m0.Reader(data)));
   }
 
   DeleteSnapshot(request: DeleteSnapshotRequest): Promise<DeleteSnapshotResponse> {
     const data = DeleteSnapshotRequest.encode(request).finish();
-    const promise = this.rpc.request("csi.v1.Controller", "DeleteSnapshot", data);
+    const promise = this.rpc.request(this.service, "DeleteSnapshot", data);
     return promise.then((data) => DeleteSnapshotResponse.decode(new _m0.Reader(data)));
   }
 
   ListSnapshots(request: ListSnapshotsRequest): Promise<ListSnapshotsResponse> {
     const data = ListSnapshotsRequest.encode(request).finish();
-    const promise = this.rpc.request("csi.v1.Controller", "ListSnapshots", data);
+    const promise = this.rpc.request(this.service, "ListSnapshots", data);
     return promise.then((data) => ListSnapshotsResponse.decode(new _m0.Reader(data)));
   }
 
   ControllerExpandVolume(request: ControllerExpandVolumeRequest): Promise<ControllerExpandVolumeResponse> {
     const data = ControllerExpandVolumeRequest.encode(request).finish();
-    const promise = this.rpc.request("csi.v1.Controller", "ControllerExpandVolume", data);
+    const promise = this.rpc.request(this.service, "ControllerExpandVolume", data);
     return promise.then((data) => ControllerExpandVolumeResponse.decode(new _m0.Reader(data)));
   }
 
   ControllerGetVolume(request: ControllerGetVolumeRequest): Promise<ControllerGetVolumeResponse> {
     const data = ControllerGetVolumeRequest.encode(request).finish();
-    const promise = this.rpc.request("csi.v1.Controller", "ControllerGetVolume", data);
+    const promise = this.rpc.request(this.service, "ControllerGetVolume", data);
     return promise.then((data) => ControllerGetVolumeResponse.decode(new _m0.Reader(data)));
   }
 }
@@ -12725,7 +12729,9 @@ export interface Node {
 
 export class NodeClientImpl implements Node {
   private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly service: string;
+  constructor(rpc: Rpc, opts?: { service?: string }) {
+    this.service = opts?.service || "csi.v1.Node";
     this.rpc = rpc;
     this.NodeStageVolume = this.NodeStageVolume.bind(this);
     this.NodeUnstageVolume = this.NodeUnstageVolume.bind(this);
@@ -12738,49 +12744,49 @@ export class NodeClientImpl implements Node {
   }
   NodeStageVolume(request: NodeStageVolumeRequest): Promise<NodeStageVolumeResponse> {
     const data = NodeStageVolumeRequest.encode(request).finish();
-    const promise = this.rpc.request("csi.v1.Node", "NodeStageVolume", data);
+    const promise = this.rpc.request(this.service, "NodeStageVolume", data);
     return promise.then((data) => NodeStageVolumeResponse.decode(new _m0.Reader(data)));
   }
 
   NodeUnstageVolume(request: NodeUnstageVolumeRequest): Promise<NodeUnstageVolumeResponse> {
     const data = NodeUnstageVolumeRequest.encode(request).finish();
-    const promise = this.rpc.request("csi.v1.Node", "NodeUnstageVolume", data);
+    const promise = this.rpc.request(this.service, "NodeUnstageVolume", data);
     return promise.then((data) => NodeUnstageVolumeResponse.decode(new _m0.Reader(data)));
   }
 
   NodePublishVolume(request: NodePublishVolumeRequest): Promise<NodePublishVolumeResponse> {
     const data = NodePublishVolumeRequest.encode(request).finish();
-    const promise = this.rpc.request("csi.v1.Node", "NodePublishVolume", data);
+    const promise = this.rpc.request(this.service, "NodePublishVolume", data);
     return promise.then((data) => NodePublishVolumeResponse.decode(new _m0.Reader(data)));
   }
 
   NodeUnpublishVolume(request: NodeUnpublishVolumeRequest): Promise<NodeUnpublishVolumeResponse> {
     const data = NodeUnpublishVolumeRequest.encode(request).finish();
-    const promise = this.rpc.request("csi.v1.Node", "NodeUnpublishVolume", data);
+    const promise = this.rpc.request(this.service, "NodeUnpublishVolume", data);
     return promise.then((data) => NodeUnpublishVolumeResponse.decode(new _m0.Reader(data)));
   }
 
   NodeGetVolumeStats(request: NodeGetVolumeStatsRequest): Promise<NodeGetVolumeStatsResponse> {
     const data = NodeGetVolumeStatsRequest.encode(request).finish();
-    const promise = this.rpc.request("csi.v1.Node", "NodeGetVolumeStats", data);
+    const promise = this.rpc.request(this.service, "NodeGetVolumeStats", data);
     return promise.then((data) => NodeGetVolumeStatsResponse.decode(new _m0.Reader(data)));
   }
 
   NodeExpandVolume(request: NodeExpandVolumeRequest): Promise<NodeExpandVolumeResponse> {
     const data = NodeExpandVolumeRequest.encode(request).finish();
-    const promise = this.rpc.request("csi.v1.Node", "NodeExpandVolume", data);
+    const promise = this.rpc.request(this.service, "NodeExpandVolume", data);
     return promise.then((data) => NodeExpandVolumeResponse.decode(new _m0.Reader(data)));
   }
 
   NodeGetCapabilities(request: NodeGetCapabilitiesRequest): Promise<NodeGetCapabilitiesResponse> {
     const data = NodeGetCapabilitiesRequest.encode(request).finish();
-    const promise = this.rpc.request("csi.v1.Node", "NodeGetCapabilities", data);
+    const promise = this.rpc.request(this.service, "NodeGetCapabilities", data);
     return promise.then((data) => NodeGetCapabilitiesResponse.decode(new _m0.Reader(data)));
   }
 
   NodeGetInfo(request: NodeGetInfoRequest): Promise<NodeGetInfoResponse> {
     const data = NodeGetInfoRequest.encode(request).finish();
-    const promise = this.rpc.request("csi.v1.Node", "NodeGetInfo", data);
+    const promise = this.rpc.request(this.service, "NodeGetInfo", data);
     return promise.then((data) => NodeGetInfoResponse.decode(new _m0.Reader(data)));
   }
 }
