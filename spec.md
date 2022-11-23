@@ -26,7 +26,7 @@ An implementation is compliant if it satisfies all the MUST, REQUIRED, and SHALL
 | CO                | Container Orchestration system, communicates with Plugins using CSI service RPCs.                                     |
 | SP                | Storage Provider, the vendor of a CSI plugin implementation.                                                          |
 | RPC               | [Remote Procedure Call](https://en.wikipedia.org/wiki/Remote_procedure_call).                                         |
-| Node              | A host where the user workload will be running, uniquely identifiable from the perspective of a Plugin by a node ID. |
+| Node              | A host where the user workload will be running, uniquely identifiable from the perspective of a Plugin by a node ID.  |
 | Plugin            | Aka “plugin implementation”, a gRPC endpoint that implements the CSI Services.                                        |
 | Plugin Supervisor | Process that governs the lifecycle of a Plugin, MAY be the CO.                                                        |
 | Workload          | The atomic unit of "work" scheduled by a CO. This MAY be a container or a collection of containers.                   |
@@ -874,7 +874,7 @@ message VolumeCapability {
     // manner, unless otherwise modified by a workload, that they are
     // both readable and writable by said mount group identifier.
     // This is an OPTIONAL field.
-    string volume_mount_group = 3 [(alpha_field) = true];
+    string volume_mount_group = 3;
   }
 
   // Specify how a volume can be accessed.
@@ -1099,7 +1099,7 @@ message TopologyRequirement {
   //   {"region": "R1", "zone": "Z3"}
   // preferred =
   //   {"region": "R1", "zone": "Z3"}
-  // then the the SP SHOULD first attempt to make the provisioned volume
+  // then the SP SHOULD first attempt to make the provisioned volume
   // available from "zone" "Z3" in the "region" "R1" and fall back to
   // "zone" "Z2" in the "region" "R1" if that is not possible.
   //
@@ -1113,7 +1113,7 @@ message TopologyRequirement {
   // preferred =
   //   {"region": "R1", "zone": "Z4"},
   //   {"region": "R1", "zone": "Z2"}
-  // then the the SP SHOULD first attempt to make the provisioned volume
+  // then the SP SHOULD first attempt to make the provisioned volume
   // accessible from "zone" "Z4" in the "region" "R1" and fall back to
   // "zone" "Z2" in the "region" "R1" if that is not possible. If that
   // is not possible, the SP may choose between either the "zone"
@@ -1132,7 +1132,7 @@ message TopologyRequirement {
   // preferred =
   //   {"region": "R1", "zone": "Z5"},
   //   {"region": "R1", "zone": "Z3"}
-  // then the the SP SHOULD first attempt to make the provisioned volume
+  // then the SP SHOULD first attempt to make the provisioned volume
   // accessible from the combination of the two "zones" "Z5" and "Z3" in
   // the "region" "R1". If that's not possible, it should fall back to
   // a combination of "Z5" and other possibilities from the list of
@@ -1796,7 +1796,7 @@ Note that CreateSnapshot no longer blocks after the snapshot is cut.
 A gRPC error code SHALL be returned if an error occurs during any stage of the snapshotting process.
 A CO SHOULD explicitly delete snapshots when an error occurs.
 
-Based on this information, CO can issue repeated (idemponent) calls to CreateSnapshot, monitor the response, and make decisions.
+Based on this information, CO can issue repeated (idempotent) calls to CreateSnapshot, monitor the response, and make decisions.
 Note that CreateSnapshot is a synchronous call and it MUST block until the snapshot is cut.
 
 ```protobuf
@@ -2570,7 +2570,7 @@ message NodeServiceCapability {
       // Indicates that Node service supports mounting volumes
       // with provided volume group identifier during node stage
       // or node publish RPC calls.
-      VOLUME_MOUNT_GROUP = 6 [(alpha_enum_value) = true];
+      VOLUME_MOUNT_GROUP = 6;
     }
 
     Type type = 1;
@@ -2848,10 +2848,10 @@ Supervised plugins MAY be isolated and/or resource-bounded.
 * A Plugin SHOULD NOT assume that it is in the same [Linux namespaces](https://en.wikipedia.org/wiki/Linux_namespaces) as the Plugin Supervisor.
   The CO MUST clearly document the [mount propagation](https://www.kernel.org/doc/Documentation/filesystems/sharedsubtree.txt) requirements for Node Plugins and the Plugin Supervisor SHALL satisfy the CO’s requirements.
 
-##### Cgroup Isolation
+##### Cgroups Isolation
 
 * A Plugin MAY be constrained by cgroups.
-* An operator or Plugin Supervisor MAY configure the devices cgroup subsystem to ensure that a Plugin MAY access requisite devices.
+* An operator or Plugin Supervisor MAY configure the devices cgroups subsystem to ensure that a Plugin MAY access requisite devices.
 * A Plugin Supervisor MAY define resource limits for a Plugin.
 
 ##### Resource Requirements

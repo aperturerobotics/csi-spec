@@ -2,8 +2,6 @@ module github.com/aperturerobotics/csi-spec
 
 go 1.18
 
-require google.golang.org/protobuf v1.28.1
-
 require (
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -42,7 +40,10 @@ require (
 
 // Note: the below is from the Bifrost go.mod
 
-require github.com/aperturerobotics/starpc v0.12.0
+require (
+	github.com/aperturerobotics/starpc v0.12.0
+	google.golang.org/protobuf v1.28.1
+)
 
 // aperture: use compatibility forks
 replace (
