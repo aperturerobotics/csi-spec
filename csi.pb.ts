@@ -2226,6 +2226,10 @@ export const GetPluginInfoRequest = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<GetPluginInfoRequest>, I>>(base?: I): GetPluginInfoRequest {
+    return GetPluginInfoRequest.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<GetPluginInfoRequest>, I>>(_: I): GetPluginInfoRequest {
     const message = createBaseGetPluginInfoRequest();
     return message;
@@ -2337,6 +2341,10 @@ export const GetPluginInfoResponse = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<GetPluginInfoResponse>, I>>(base?: I): GetPluginInfoResponse {
+    return GetPluginInfoResponse.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<GetPluginInfoResponse>, I>>(object: I): GetPluginInfoResponse {
     const message = createBaseGetPluginInfoResponse();
     message.name = object.name ?? "";
@@ -2432,6 +2440,12 @@ export const GetPluginInfoResponse_ManifestEntry = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<GetPluginInfoResponse_ManifestEntry>, I>>(
+    base?: I,
+  ): GetPluginInfoResponse_ManifestEntry {
+    return GetPluginInfoResponse_ManifestEntry.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<GetPluginInfoResponse_ManifestEntry>, I>>(
     object: I,
   ): GetPluginInfoResponse_ManifestEntry {
@@ -2507,6 +2521,10 @@ export const GetPluginCapabilitiesRequest = {
   toJSON(_: GetPluginCapabilitiesRequest): unknown {
     const obj: any = {};
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetPluginCapabilitiesRequest>, I>>(base?: I): GetPluginCapabilitiesRequest {
+    return GetPluginCapabilitiesRequest.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<GetPluginCapabilitiesRequest>, I>>(_: I): GetPluginCapabilitiesRequest {
@@ -2595,6 +2613,10 @@ export const GetPluginCapabilitiesResponse = {
       obj.capabilities = [];
     }
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetPluginCapabilitiesResponse>, I>>(base?: I): GetPluginCapabilitiesResponse {
+    return GetPluginCapabilitiesResponse.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<GetPluginCapabilitiesResponse>, I>>(
@@ -2701,6 +2723,10 @@ export const PluginCapability = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<PluginCapability>, I>>(base?: I): PluginCapability {
+    return PluginCapability.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<PluginCapability>, I>>(object: I): PluginCapability {
     const message = createBasePluginCapability();
     if (object.type?.$case === "service" && object.type?.service !== undefined && object.type?.service !== null) {
@@ -2794,6 +2820,10 @@ export const PluginCapability_Service = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<PluginCapability_Service>, I>>(base?: I): PluginCapability_Service {
+    return PluginCapability_Service.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<PluginCapability_Service>, I>>(object: I): PluginCapability_Service {
     const message = createBasePluginCapability_Service();
     message.type = object.type ?? 0;
@@ -2875,6 +2905,12 @@ export const PluginCapability_VolumeExpansion = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<PluginCapability_VolumeExpansion>, I>>(
+    base?: I,
+  ): PluginCapability_VolumeExpansion {
+    return PluginCapability_VolumeExpansion.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<PluginCapability_VolumeExpansion>, I>>(
     object: I,
   ): PluginCapability_VolumeExpansion {
@@ -2947,6 +2983,10 @@ export const ProbeRequest = {
   toJSON(_: ProbeRequest): unknown {
     const obj: any = {};
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ProbeRequest>, I>>(base?: I): ProbeRequest {
+    return ProbeRequest.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<ProbeRequest>, I>>(_: I): ProbeRequest {
@@ -3025,6 +3065,10 @@ export const ProbeResponse = {
     const obj: any = {};
     message.ready !== undefined && (obj.ready = message.ready);
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ProbeResponse>, I>>(base?: I): ProbeResponse {
+    return ProbeResponse.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<ProbeResponse>, I>>(object: I): ProbeResponse {
@@ -3209,6 +3253,10 @@ export const CreateVolumeRequest = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<CreateVolumeRequest>, I>>(base?: I): CreateVolumeRequest {
+    return CreateVolumeRequest.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<CreateVolumeRequest>, I>>(object: I): CreateVolumeRequest {
     const message = createBaseCreateVolumeRequest();
     message.name = object.name ?? "";
@@ -3323,6 +3371,12 @@ export const CreateVolumeRequest_ParametersEntry = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<CreateVolumeRequest_ParametersEntry>, I>>(
+    base?: I,
+  ): CreateVolumeRequest_ParametersEntry {
+    return CreateVolumeRequest_ParametersEntry.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<CreateVolumeRequest_ParametersEntry>, I>>(
     object: I,
   ): CreateVolumeRequest_ParametersEntry {
@@ -3412,6 +3466,12 @@ export const CreateVolumeRequest_SecretsEntry = {
     message.key !== undefined && (obj.key = message.key);
     message.value !== undefined && (obj.value = message.value);
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CreateVolumeRequest_SecretsEntry>, I>>(
+    base?: I,
+  ): CreateVolumeRequest_SecretsEntry {
+    return CreateVolumeRequest_SecretsEntry.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<CreateVolumeRequest_SecretsEntry>, I>>(
@@ -3518,6 +3578,10 @@ export const VolumeContentSource = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<VolumeContentSource>, I>>(base?: I): VolumeContentSource {
+    return VolumeContentSource.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<VolumeContentSource>, I>>(object: I): VolumeContentSource {
     const message = createBaseVolumeContentSource();
     if (object.type?.$case === "snapshot" && object.type?.snapshot !== undefined && object.type?.snapshot !== null) {
@@ -3607,6 +3671,12 @@ export const VolumeContentSource_SnapshotSource = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<VolumeContentSource_SnapshotSource>, I>>(
+    base?: I,
+  ): VolumeContentSource_SnapshotSource {
+    return VolumeContentSource_SnapshotSource.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<VolumeContentSource_SnapshotSource>, I>>(
     object: I,
   ): VolumeContentSource_SnapshotSource {
@@ -3690,6 +3760,12 @@ export const VolumeContentSource_VolumeSource = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<VolumeContentSource_VolumeSource>, I>>(
+    base?: I,
+  ): VolumeContentSource_VolumeSource {
+    return VolumeContentSource_VolumeSource.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<VolumeContentSource_VolumeSource>, I>>(
     object: I,
   ): VolumeContentSource_VolumeSource {
@@ -3771,6 +3847,10 @@ export const CreateVolumeResponse = {
     const obj: any = {};
     message.volume !== undefined && (obj.volume = message.volume ? Volume.toJSON(message.volume) : undefined);
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CreateVolumeResponse>, I>>(base?: I): CreateVolumeResponse {
+    return CreateVolumeResponse.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<CreateVolumeResponse>, I>>(object: I): CreateVolumeResponse {
@@ -3882,6 +3962,10 @@ export const VolumeCapability = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<VolumeCapability>, I>>(base?: I): VolumeCapability {
+    return VolumeCapability.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<VolumeCapability>, I>>(object: I): VolumeCapability {
     const message = createBaseVolumeCapability();
     if (
@@ -3970,6 +4054,10 @@ export const VolumeCapability_BlockVolume = {
   toJSON(_: VolumeCapability_BlockVolume): unknown {
     const obj: any = {};
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<VolumeCapability_BlockVolume>, I>>(base?: I): VolumeCapability_BlockVolume {
+    return VolumeCapability_BlockVolume.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<VolumeCapability_BlockVolume>, I>>(_: I): VolumeCapability_BlockVolume {
@@ -4074,6 +4162,10 @@ export const VolumeCapability_MountVolume = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<VolumeCapability_MountVolume>, I>>(base?: I): VolumeCapability_MountVolume {
+    return VolumeCapability_MountVolume.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<VolumeCapability_MountVolume>, I>>(object: I): VolumeCapability_MountVolume {
     const message = createBaseVolumeCapability_MountVolume();
     message.fsType = object.fsType ?? "";
@@ -4155,6 +4247,10 @@ export const VolumeCapability_AccessMode = {
     const obj: any = {};
     message.mode !== undefined && (obj.mode = volumeCapability_AccessMode_ModeToJSON(message.mode));
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<VolumeCapability_AccessMode>, I>>(base?: I): VolumeCapability_AccessMode {
+    return VolumeCapability_AccessMode.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<VolumeCapability_AccessMode>, I>>(object: I): VolumeCapability_AccessMode {
@@ -4244,6 +4340,10 @@ export const CapacityRange = {
     message.requiredBytes !== undefined && (obj.requiredBytes = (message.requiredBytes || Long.ZERO).toString());
     message.limitBytes !== undefined && (obj.limitBytes = (message.limitBytes || Long.ZERO).toString());
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CapacityRange>, I>>(base?: I): CapacityRange {
+    return CapacityRange.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<CapacityRange>, I>>(object: I): CapacityRange {
@@ -4390,6 +4490,10 @@ export const Volume = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<Volume>, I>>(base?: I): Volume {
+    return Volume.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<Volume>, I>>(object: I): Volume {
     const message = createBaseVolume();
     message.capacityBytes = (object.capacityBytes !== undefined && object.capacityBytes !== null)
@@ -4494,6 +4598,10 @@ export const Volume_VolumeContextEntry = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<Volume_VolumeContextEntry>, I>>(base?: I): Volume_VolumeContextEntry {
+    return Volume_VolumeContextEntry.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<Volume_VolumeContextEntry>, I>>(object: I): Volume_VolumeContextEntry {
     const message = createBaseVolume_VolumeContextEntry();
     message.key = object.key ?? "";
@@ -4594,6 +4702,10 @@ export const TopologyRequirement = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<TopologyRequirement>, I>>(base?: I): TopologyRequirement {
+    return TopologyRequirement.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<TopologyRequirement>, I>>(object: I): TopologyRequirement {
     const message = createBaseTopologyRequirement();
     message.requisite = object.requisite?.map((e) => Topology.fromPartial(e)) || [];
@@ -4689,6 +4801,10 @@ export const Topology = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<Topology>, I>>(base?: I): Topology {
+    return Topology.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<Topology>, I>>(object: I): Topology {
     const message = createBaseTopology();
     message.segments = Object.entries(object.segments ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
@@ -4780,6 +4896,10 @@ export const Topology_SegmentsEntry = {
     message.key !== undefined && (obj.key = message.key);
     message.value !== undefined && (obj.value = message.value);
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Topology_SegmentsEntry>, I>>(base?: I): Topology_SegmentsEntry {
+    return Topology_SegmentsEntry.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<Topology_SegmentsEntry>, I>>(object: I): Topology_SegmentsEntry {
@@ -4887,6 +5007,10 @@ export const DeleteVolumeRequest = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<DeleteVolumeRequest>, I>>(base?: I): DeleteVolumeRequest {
+    return DeleteVolumeRequest.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<DeleteVolumeRequest>, I>>(object: I): DeleteVolumeRequest {
     const message = createBaseDeleteVolumeRequest();
     message.volumeId = object.volumeId ?? "";
@@ -4981,6 +5105,12 @@ export const DeleteVolumeRequest_SecretsEntry = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<DeleteVolumeRequest_SecretsEntry>, I>>(
+    base?: I,
+  ): DeleteVolumeRequest_SecretsEntry {
+    return DeleteVolumeRequest_SecretsEntry.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<DeleteVolumeRequest_SecretsEntry>, I>>(
     object: I,
   ): DeleteVolumeRequest_SecretsEntry {
@@ -5056,6 +5186,10 @@ export const DeleteVolumeResponse = {
   toJSON(_: DeleteVolumeResponse): unknown {
     const obj: any = {};
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DeleteVolumeResponse>, I>>(base?: I): DeleteVolumeResponse {
+    return DeleteVolumeResponse.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<DeleteVolumeResponse>, I>>(_: I): DeleteVolumeResponse {
@@ -5208,6 +5342,10 @@ export const ControllerPublishVolumeRequest = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<ControllerPublishVolumeRequest>, I>>(base?: I): ControllerPublishVolumeRequest {
+    return ControllerPublishVolumeRequest.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<ControllerPublishVolumeRequest>, I>>(
     object: I,
   ): ControllerPublishVolumeRequest {
@@ -5318,6 +5456,12 @@ export const ControllerPublishVolumeRequest_SecretsEntry = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<ControllerPublishVolumeRequest_SecretsEntry>, I>>(
+    base?: I,
+  ): ControllerPublishVolumeRequest_SecretsEntry {
+    return ControllerPublishVolumeRequest_SecretsEntry.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<ControllerPublishVolumeRequest_SecretsEntry>, I>>(
     object: I,
   ): ControllerPublishVolumeRequest_SecretsEntry {
@@ -5414,6 +5558,12 @@ export const ControllerPublishVolumeRequest_VolumeContextEntry = {
     message.key !== undefined && (obj.key = message.key);
     message.value !== undefined && (obj.value = message.value);
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ControllerPublishVolumeRequest_VolumeContextEntry>, I>>(
+    base?: I,
+  ): ControllerPublishVolumeRequest_VolumeContextEntry {
+    return ControllerPublishVolumeRequest_VolumeContextEntry.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<ControllerPublishVolumeRequest_VolumeContextEntry>, I>>(
@@ -5514,6 +5664,10 @@ export const ControllerPublishVolumeResponse = {
       });
     }
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ControllerPublishVolumeResponse>, I>>(base?: I): ControllerPublishVolumeResponse {
+    return ControllerPublishVolumeResponse.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<ControllerPublishVolumeResponse>, I>>(
@@ -5619,6 +5773,12 @@ export const ControllerPublishVolumeResponse_PublishContextEntry = {
     message.key !== undefined && (obj.key = message.key);
     message.value !== undefined && (obj.value = message.value);
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ControllerPublishVolumeResponse_PublishContextEntry>, I>>(
+    base?: I,
+  ): ControllerPublishVolumeResponse_PublishContextEntry {
+    return ControllerPublishVolumeResponse_PublishContextEntry.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<ControllerPublishVolumeResponse_PublishContextEntry>, I>>(
@@ -5737,6 +5897,12 @@ export const ControllerUnpublishVolumeRequest = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<ControllerUnpublishVolumeRequest>, I>>(
+    base?: I,
+  ): ControllerUnpublishVolumeRequest {
+    return ControllerUnpublishVolumeRequest.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<ControllerUnpublishVolumeRequest>, I>>(
     object: I,
   ): ControllerUnpublishVolumeRequest {
@@ -5834,6 +6000,12 @@ export const ControllerUnpublishVolumeRequest_SecretsEntry = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<ControllerUnpublishVolumeRequest_SecretsEntry>, I>>(
+    base?: I,
+  ): ControllerUnpublishVolumeRequest_SecretsEntry {
+    return ControllerUnpublishVolumeRequest_SecretsEntry.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<ControllerUnpublishVolumeRequest_SecretsEntry>, I>>(
     object: I,
   ): ControllerUnpublishVolumeRequest_SecretsEntry {
@@ -5909,6 +6081,12 @@ export const ControllerUnpublishVolumeResponse = {
   toJSON(_: ControllerUnpublishVolumeResponse): unknown {
     const obj: any = {};
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ControllerUnpublishVolumeResponse>, I>>(
+    base?: I,
+  ): ControllerUnpublishVolumeResponse {
+    return ControllerUnpublishVolumeResponse.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<ControllerUnpublishVolumeResponse>, I>>(
@@ -6075,6 +6253,12 @@ export const ValidateVolumeCapabilitiesRequest = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<ValidateVolumeCapabilitiesRequest>, I>>(
+    base?: I,
+  ): ValidateVolumeCapabilitiesRequest {
+    return ValidateVolumeCapabilitiesRequest.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<ValidateVolumeCapabilitiesRequest>, I>>(
     object: I,
   ): ValidateVolumeCapabilitiesRequest {
@@ -6197,6 +6381,12 @@ export const ValidateVolumeCapabilitiesRequest_VolumeContextEntry = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<ValidateVolumeCapabilitiesRequest_VolumeContextEntry>, I>>(
+    base?: I,
+  ): ValidateVolumeCapabilitiesRequest_VolumeContextEntry {
+    return ValidateVolumeCapabilitiesRequest_VolumeContextEntry.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<ValidateVolumeCapabilitiesRequest_VolumeContextEntry>, I>>(
     object: I,
   ): ValidateVolumeCapabilitiesRequest_VolumeContextEntry {
@@ -6295,6 +6485,12 @@ export const ValidateVolumeCapabilitiesRequest_ParametersEntry = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<ValidateVolumeCapabilitiesRequest_ParametersEntry>, I>>(
+    base?: I,
+  ): ValidateVolumeCapabilitiesRequest_ParametersEntry {
+    return ValidateVolumeCapabilitiesRequest_ParametersEntry.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<ValidateVolumeCapabilitiesRequest_ParametersEntry>, I>>(
     object: I,
   ): ValidateVolumeCapabilitiesRequest_ParametersEntry {
@@ -6387,6 +6583,12 @@ export const ValidateVolumeCapabilitiesRequest_SecretsEntry = {
     message.key !== undefined && (obj.key = message.key);
     message.value !== undefined && (obj.value = message.value);
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ValidateVolumeCapabilitiesRequest_SecretsEntry>, I>>(
+    base?: I,
+  ): ValidateVolumeCapabilitiesRequest_SecretsEntry {
+    return ValidateVolumeCapabilitiesRequest_SecretsEntry.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<ValidateVolumeCapabilitiesRequest_SecretsEntry>, I>>(
@@ -6486,6 +6688,12 @@ export const ValidateVolumeCapabilitiesResponse = {
         : undefined);
     message.message !== undefined && (obj.message = message.message);
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ValidateVolumeCapabilitiesResponse>, I>>(
+    base?: I,
+  ): ValidateVolumeCapabilitiesResponse {
+    return ValidateVolumeCapabilitiesResponse.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<ValidateVolumeCapabilitiesResponse>, I>>(
@@ -6633,6 +6841,12 @@ export const ValidateVolumeCapabilitiesResponse_Confirmed = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<ValidateVolumeCapabilitiesResponse_Confirmed>, I>>(
+    base?: I,
+  ): ValidateVolumeCapabilitiesResponse_Confirmed {
+    return ValidateVolumeCapabilitiesResponse_Confirmed.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<ValidateVolumeCapabilitiesResponse_Confirmed>, I>>(
     object: I,
   ): ValidateVolumeCapabilitiesResponse_Confirmed {
@@ -6753,6 +6967,12 @@ export const ValidateVolumeCapabilitiesResponse_Confirmed_VolumeContextEntry = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<ValidateVolumeCapabilitiesResponse_Confirmed_VolumeContextEntry>, I>>(
+    base?: I,
+  ): ValidateVolumeCapabilitiesResponse_Confirmed_VolumeContextEntry {
+    return ValidateVolumeCapabilitiesResponse_Confirmed_VolumeContextEntry.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<ValidateVolumeCapabilitiesResponse_Confirmed_VolumeContextEntry>, I>>(
     object: I,
   ): ValidateVolumeCapabilitiesResponse_Confirmed_VolumeContextEntry {
@@ -6856,6 +7076,12 @@ export const ValidateVolumeCapabilitiesResponse_Confirmed_ParametersEntry = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<ValidateVolumeCapabilitiesResponse_Confirmed_ParametersEntry>, I>>(
+    base?: I,
+  ): ValidateVolumeCapabilitiesResponse_Confirmed_ParametersEntry {
+    return ValidateVolumeCapabilitiesResponse_Confirmed_ParametersEntry.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<ValidateVolumeCapabilitiesResponse_Confirmed_ParametersEntry>, I>>(
     object: I,
   ): ValidateVolumeCapabilitiesResponse_Confirmed_ParametersEntry {
@@ -6948,6 +7174,10 @@ export const ListVolumesRequest = {
     message.maxEntries !== undefined && (obj.maxEntries = Math.round(message.maxEntries));
     message.startingToken !== undefined && (obj.startingToken = message.startingToken);
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ListVolumesRequest>, I>>(base?: I): ListVolumesRequest {
+    return ListVolumesRequest.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<ListVolumesRequest>, I>>(object: I): ListVolumesRequest {
@@ -7046,6 +7276,10 @@ export const ListVolumesResponse = {
     }
     message.nextToken !== undefined && (obj.nextToken = message.nextToken);
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ListVolumesResponse>, I>>(base?: I): ListVolumesResponse {
+    return ListVolumesResponse.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<ListVolumesResponse>, I>>(object: I): ListVolumesResponse {
@@ -7147,6 +7381,12 @@ export const ListVolumesResponse_VolumeStatus = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<ListVolumesResponse_VolumeStatus>, I>>(
+    base?: I,
+  ): ListVolumesResponse_VolumeStatus {
+    return ListVolumesResponse_VolumeStatus.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<ListVolumesResponse_VolumeStatus>, I>>(
     object: I,
   ): ListVolumesResponse_VolumeStatus {
@@ -7244,6 +7484,10 @@ export const ListVolumesResponse_Entry = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<ListVolumesResponse_Entry>, I>>(base?: I): ListVolumesResponse_Entry {
+    return ListVolumesResponse_Entry.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<ListVolumesResponse_Entry>, I>>(object: I): ListVolumesResponse_Entry {
     const message = createBaseListVolumesResponse_Entry();
     message.volume = (object.volume !== undefined && object.volume !== null)
@@ -7328,6 +7572,10 @@ export const ControllerGetVolumeRequest = {
     const obj: any = {};
     message.volumeId !== undefined && (obj.volumeId = message.volumeId);
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ControllerGetVolumeRequest>, I>>(base?: I): ControllerGetVolumeRequest {
+    return ControllerGetVolumeRequest.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<ControllerGetVolumeRequest>, I>>(object: I): ControllerGetVolumeRequest {
@@ -7420,6 +7668,10 @@ export const ControllerGetVolumeResponse = {
     message.status !== undefined &&
       (obj.status = message.status ? ControllerGetVolumeResponse_VolumeStatus.toJSON(message.status) : undefined);
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ControllerGetVolumeResponse>, I>>(base?: I): ControllerGetVolumeResponse {
+    return ControllerGetVolumeResponse.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<ControllerGetVolumeResponse>, I>>(object: I): ControllerGetVolumeResponse {
@@ -7523,6 +7775,12 @@ export const ControllerGetVolumeResponse_VolumeStatus = {
     message.volumeCondition !== undefined &&
       (obj.volumeCondition = message.volumeCondition ? VolumeCondition.toJSON(message.volumeCondition) : undefined);
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ControllerGetVolumeResponse_VolumeStatus>, I>>(
+    base?: I,
+  ): ControllerGetVolumeResponse_VolumeStatus {
+    return ControllerGetVolumeResponse_VolumeStatus.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<ControllerGetVolumeResponse_VolumeStatus>, I>>(
@@ -7649,6 +7907,10 @@ export const GetCapacityRequest = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<GetCapacityRequest>, I>>(base?: I): GetCapacityRequest {
+    return GetCapacityRequest.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<GetCapacityRequest>, I>>(object: I): GetCapacityRequest {
     const message = createBaseGetCapacityRequest();
     message.volumeCapabilities = object.volumeCapabilities?.map((e) => VolumeCapability.fromPartial(e)) || [];
@@ -7747,6 +8009,12 @@ export const GetCapacityRequest_ParametersEntry = {
     message.key !== undefined && (obj.key = message.key);
     message.value !== undefined && (obj.value = message.value);
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetCapacityRequest_ParametersEntry>, I>>(
+    base?: I,
+  ): GetCapacityRequest_ParametersEntry {
+    return GetCapacityRequest_ParametersEntry.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<GetCapacityRequest_ParametersEntry>, I>>(
@@ -7852,6 +8120,10 @@ export const GetCapacityResponse = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<GetCapacityResponse>, I>>(base?: I): GetCapacityResponse {
+    return GetCapacityResponse.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<GetCapacityResponse>, I>>(object: I): GetCapacityResponse {
     const message = createBaseGetCapacityResponse();
     message.availableCapacity = (object.availableCapacity !== undefined && object.availableCapacity !== null)
@@ -7932,6 +8204,12 @@ export const ControllerGetCapabilitiesRequest = {
   toJSON(_: ControllerGetCapabilitiesRequest): unknown {
     const obj: any = {};
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ControllerGetCapabilitiesRequest>, I>>(
+    base?: I,
+  ): ControllerGetCapabilitiesRequest {
+    return ControllerGetCapabilitiesRequest.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<ControllerGetCapabilitiesRequest>, I>>(
@@ -8024,6 +8302,12 @@ export const ControllerGetCapabilitiesResponse = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<ControllerGetCapabilitiesResponse>, I>>(
+    base?: I,
+  ): ControllerGetCapabilitiesResponse {
+    return ControllerGetCapabilitiesResponse.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<ControllerGetCapabilitiesResponse>, I>>(
     object: I,
   ): ControllerGetCapabilitiesResponse {
@@ -8110,6 +8394,10 @@ export const ControllerServiceCapability = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<ControllerServiceCapability>, I>>(base?: I): ControllerServiceCapability {
+    return ControllerServiceCapability.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<ControllerServiceCapability>, I>>(object: I): ControllerServiceCapability {
     const message = createBaseControllerServiceCapability();
     if (object.type?.$case === "rpc" && object.type?.rpc !== undefined && object.type?.rpc !== null) {
@@ -8191,6 +8479,10 @@ export const ControllerServiceCapability_RPC = {
     const obj: any = {};
     message.type !== undefined && (obj.type = controllerServiceCapability_RPC_TypeToJSON(message.type));
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ControllerServiceCapability_RPC>, I>>(base?: I): ControllerServiceCapability_RPC {
+    return ControllerServiceCapability_RPC.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<ControllerServiceCapability_RPC>, I>>(
@@ -8328,6 +8620,10 @@ export const CreateSnapshotRequest = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<CreateSnapshotRequest>, I>>(base?: I): CreateSnapshotRequest {
+    return CreateSnapshotRequest.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<CreateSnapshotRequest>, I>>(object: I): CreateSnapshotRequest {
     const message = createBaseCreateSnapshotRequest();
     message.sourceVolumeId = object.sourceVolumeId ?? "";
@@ -8432,6 +8728,12 @@ export const CreateSnapshotRequest_SecretsEntry = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<CreateSnapshotRequest_SecretsEntry>, I>>(
+    base?: I,
+  ): CreateSnapshotRequest_SecretsEntry {
+    return CreateSnapshotRequest_SecretsEntry.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<CreateSnapshotRequest_SecretsEntry>, I>>(
     object: I,
   ): CreateSnapshotRequest_SecretsEntry {
@@ -8523,6 +8825,12 @@ export const CreateSnapshotRequest_ParametersEntry = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<CreateSnapshotRequest_ParametersEntry>, I>>(
+    base?: I,
+  ): CreateSnapshotRequest_ParametersEntry {
+    return CreateSnapshotRequest_ParametersEntry.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<CreateSnapshotRequest_ParametersEntry>, I>>(
     object: I,
   ): CreateSnapshotRequest_ParametersEntry {
@@ -8605,6 +8913,10 @@ export const CreateSnapshotResponse = {
     const obj: any = {};
     message.snapshot !== undefined && (obj.snapshot = message.snapshot ? Snapshot.toJSON(message.snapshot) : undefined);
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CreateSnapshotResponse>, I>>(base?: I): CreateSnapshotResponse {
+    return CreateSnapshotResponse.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<CreateSnapshotResponse>, I>>(object: I): CreateSnapshotResponse {
@@ -8722,6 +9034,10 @@ export const Snapshot = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<Snapshot>, I>>(base?: I): Snapshot {
+    return Snapshot.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<Snapshot>, I>>(object: I): Snapshot {
     const message = createBaseSnapshot();
     message.sizeBytes = (object.sizeBytes !== undefined && object.sizeBytes !== null)
@@ -8832,6 +9148,10 @@ export const DeleteSnapshotRequest = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<DeleteSnapshotRequest>, I>>(base?: I): DeleteSnapshotRequest {
+    return DeleteSnapshotRequest.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<DeleteSnapshotRequest>, I>>(object: I): DeleteSnapshotRequest {
     const message = createBaseDeleteSnapshotRequest();
     message.snapshotId = object.snapshotId ?? "";
@@ -8926,6 +9246,12 @@ export const DeleteSnapshotRequest_SecretsEntry = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<DeleteSnapshotRequest_SecretsEntry>, I>>(
+    base?: I,
+  ): DeleteSnapshotRequest_SecretsEntry {
+    return DeleteSnapshotRequest_SecretsEntry.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<DeleteSnapshotRequest_SecretsEntry>, I>>(
     object: I,
   ): DeleteSnapshotRequest_SecretsEntry {
@@ -9001,6 +9327,10 @@ export const DeleteSnapshotResponse = {
   toJSON(_: DeleteSnapshotResponse): unknown {
     const obj: any = {};
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DeleteSnapshotResponse>, I>>(base?: I): DeleteSnapshotResponse {
+    return DeleteSnapshotResponse.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<DeleteSnapshotResponse>, I>>(_: I): DeleteSnapshotResponse {
@@ -9130,6 +9460,10 @@ export const ListSnapshotsRequest = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<ListSnapshotsRequest>, I>>(base?: I): ListSnapshotsRequest {
+    return ListSnapshotsRequest.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<ListSnapshotsRequest>, I>>(object: I): ListSnapshotsRequest {
     const message = createBaseListSnapshotsRequest();
     message.maxEntries = object.maxEntries ?? 0;
@@ -9225,6 +9559,12 @@ export const ListSnapshotsRequest_SecretsEntry = {
     message.key !== undefined && (obj.key = message.key);
     message.value !== undefined && (obj.value = message.value);
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ListSnapshotsRequest_SecretsEntry>, I>>(
+    base?: I,
+  ): ListSnapshotsRequest_SecretsEntry {
+    return ListSnapshotsRequest_SecretsEntry.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<ListSnapshotsRequest_SecretsEntry>, I>>(
@@ -9327,6 +9667,10 @@ export const ListSnapshotsResponse = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<ListSnapshotsResponse>, I>>(base?: I): ListSnapshotsResponse {
+    return ListSnapshotsResponse.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<ListSnapshotsResponse>, I>>(object: I): ListSnapshotsResponse {
     const message = createBaseListSnapshotsResponse();
     message.entries = object.entries?.map((e) => ListSnapshotsResponse_Entry.fromPartial(e)) || [];
@@ -9407,6 +9751,10 @@ export const ListSnapshotsResponse_Entry = {
     const obj: any = {};
     message.snapshot !== undefined && (obj.snapshot = message.snapshot ? Snapshot.toJSON(message.snapshot) : undefined);
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ListSnapshotsResponse_Entry>, I>>(base?: I): ListSnapshotsResponse_Entry {
+    return ListSnapshotsResponse_Entry.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<ListSnapshotsResponse_Entry>, I>>(object: I): ListSnapshotsResponse_Entry {
@@ -9533,6 +9881,10 @@ export const ControllerExpandVolumeRequest = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<ControllerExpandVolumeRequest>, I>>(base?: I): ControllerExpandVolumeRequest {
+    return ControllerExpandVolumeRequest.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<ControllerExpandVolumeRequest>, I>>(
     object: I,
   ): ControllerExpandVolumeRequest {
@@ -9635,6 +9987,12 @@ export const ControllerExpandVolumeRequest_SecretsEntry = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<ControllerExpandVolumeRequest_SecretsEntry>, I>>(
+    base?: I,
+  ): ControllerExpandVolumeRequest_SecretsEntry {
+    return ControllerExpandVolumeRequest_SecretsEntry.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<ControllerExpandVolumeRequest_SecretsEntry>, I>>(
     object: I,
   ): ControllerExpandVolumeRequest_SecretsEntry {
@@ -9727,6 +10085,10 @@ export const ControllerExpandVolumeResponse = {
     message.capacityBytes !== undefined && (obj.capacityBytes = (message.capacityBytes || Long.ZERO).toString());
     message.nodeExpansionRequired !== undefined && (obj.nodeExpansionRequired = message.nodeExpansionRequired);
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ControllerExpandVolumeResponse>, I>>(base?: I): ControllerExpandVolumeResponse {
+    return ControllerExpandVolumeResponse.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<ControllerExpandVolumeResponse>, I>>(
@@ -9904,6 +10266,10 @@ export const NodeStageVolumeRequest = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<NodeStageVolumeRequest>, I>>(base?: I): NodeStageVolumeRequest {
+    return NodeStageVolumeRequest.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<NodeStageVolumeRequest>, I>>(object: I): NodeStageVolumeRequest {
     const message = createBaseNodeStageVolumeRequest();
     message.volumeId = object.volumeId ?? "";
@@ -10020,6 +10386,12 @@ export const NodeStageVolumeRequest_PublishContextEntry = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<NodeStageVolumeRequest_PublishContextEntry>, I>>(
+    base?: I,
+  ): NodeStageVolumeRequest_PublishContextEntry {
+    return NodeStageVolumeRequest_PublishContextEntry.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<NodeStageVolumeRequest_PublishContextEntry>, I>>(
     object: I,
   ): NodeStageVolumeRequest_PublishContextEntry {
@@ -10109,6 +10481,12 @@ export const NodeStageVolumeRequest_SecretsEntry = {
     message.key !== undefined && (obj.key = message.key);
     message.value !== undefined && (obj.value = message.value);
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<NodeStageVolumeRequest_SecretsEntry>, I>>(
+    base?: I,
+  ): NodeStageVolumeRequest_SecretsEntry {
+    return NodeStageVolumeRequest_SecretsEntry.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<NodeStageVolumeRequest_SecretsEntry>, I>>(
@@ -10202,6 +10580,12 @@ export const NodeStageVolumeRequest_VolumeContextEntry = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<NodeStageVolumeRequest_VolumeContextEntry>, I>>(
+    base?: I,
+  ): NodeStageVolumeRequest_VolumeContextEntry {
+    return NodeStageVolumeRequest_VolumeContextEntry.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<NodeStageVolumeRequest_VolumeContextEntry>, I>>(
     object: I,
   ): NodeStageVolumeRequest_VolumeContextEntry {
@@ -10277,6 +10661,10 @@ export const NodeStageVolumeResponse = {
   toJSON(_: NodeStageVolumeResponse): unknown {
     const obj: any = {};
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<NodeStageVolumeResponse>, I>>(base?: I): NodeStageVolumeResponse {
+    return NodeStageVolumeResponse.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<NodeStageVolumeResponse>, I>>(_: I): NodeStageVolumeResponse {
@@ -10369,6 +10757,10 @@ export const NodeUnstageVolumeRequest = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<NodeUnstageVolumeRequest>, I>>(base?: I): NodeUnstageVolumeRequest {
+    return NodeUnstageVolumeRequest.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<NodeUnstageVolumeRequest>, I>>(object: I): NodeUnstageVolumeRequest {
     const message = createBaseNodeUnstageVolumeRequest();
     message.volumeId = object.volumeId ?? "";
@@ -10442,6 +10834,10 @@ export const NodeUnstageVolumeResponse = {
   toJSON(_: NodeUnstageVolumeResponse): unknown {
     const obj: any = {};
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<NodeUnstageVolumeResponse>, I>>(base?: I): NodeUnstageVolumeResponse {
+    return NodeUnstageVolumeResponse.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<NodeUnstageVolumeResponse>, I>>(_: I): NodeUnstageVolumeResponse {
@@ -10632,6 +11028,10 @@ export const NodePublishVolumeRequest = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<NodePublishVolumeRequest>, I>>(base?: I): NodePublishVolumeRequest {
+    return NodePublishVolumeRequest.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<NodePublishVolumeRequest>, I>>(object: I): NodePublishVolumeRequest {
     const message = createBaseNodePublishVolumeRequest();
     message.volumeId = object.volumeId ?? "";
@@ -10750,6 +11150,12 @@ export const NodePublishVolumeRequest_PublishContextEntry = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<NodePublishVolumeRequest_PublishContextEntry>, I>>(
+    base?: I,
+  ): NodePublishVolumeRequest_PublishContextEntry {
+    return NodePublishVolumeRequest_PublishContextEntry.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<NodePublishVolumeRequest_PublishContextEntry>, I>>(
     object: I,
   ): NodePublishVolumeRequest_PublishContextEntry {
@@ -10839,6 +11245,12 @@ export const NodePublishVolumeRequest_SecretsEntry = {
     message.key !== undefined && (obj.key = message.key);
     message.value !== undefined && (obj.value = message.value);
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<NodePublishVolumeRequest_SecretsEntry>, I>>(
+    base?: I,
+  ): NodePublishVolumeRequest_SecretsEntry {
+    return NodePublishVolumeRequest_SecretsEntry.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<NodePublishVolumeRequest_SecretsEntry>, I>>(
@@ -10932,6 +11344,12 @@ export const NodePublishVolumeRequest_VolumeContextEntry = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<NodePublishVolumeRequest_VolumeContextEntry>, I>>(
+    base?: I,
+  ): NodePublishVolumeRequest_VolumeContextEntry {
+    return NodePublishVolumeRequest_VolumeContextEntry.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<NodePublishVolumeRequest_VolumeContextEntry>, I>>(
     object: I,
   ): NodePublishVolumeRequest_VolumeContextEntry {
@@ -11007,6 +11425,10 @@ export const NodePublishVolumeResponse = {
   toJSON(_: NodePublishVolumeResponse): unknown {
     const obj: any = {};
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<NodePublishVolumeResponse>, I>>(base?: I): NodePublishVolumeResponse {
+    return NodePublishVolumeResponse.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<NodePublishVolumeResponse>, I>>(_: I): NodePublishVolumeResponse {
@@ -11099,6 +11521,10 @@ export const NodeUnpublishVolumeRequest = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<NodeUnpublishVolumeRequest>, I>>(base?: I): NodeUnpublishVolumeRequest {
+    return NodeUnpublishVolumeRequest.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<NodeUnpublishVolumeRequest>, I>>(object: I): NodeUnpublishVolumeRequest {
     const message = createBaseNodeUnpublishVolumeRequest();
     message.volumeId = object.volumeId ?? "";
@@ -11172,6 +11598,10 @@ export const NodeUnpublishVolumeResponse = {
   toJSON(_: NodeUnpublishVolumeResponse): unknown {
     const obj: any = {};
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<NodeUnpublishVolumeResponse>, I>>(base?: I): NodeUnpublishVolumeResponse {
+    return NodeUnpublishVolumeResponse.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<NodeUnpublishVolumeResponse>, I>>(_: I): NodeUnpublishVolumeResponse {
@@ -11272,6 +11702,10 @@ export const NodeGetVolumeStatsRequest = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<NodeGetVolumeStatsRequest>, I>>(base?: I): NodeGetVolumeStatsRequest {
+    return NodeGetVolumeStatsRequest.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<NodeGetVolumeStatsRequest>, I>>(object: I): NodeGetVolumeStatsRequest {
     const message = createBaseNodeGetVolumeStatsRequest();
     message.volumeId = object.volumeId ?? "";
@@ -11368,6 +11802,10 @@ export const NodeGetVolumeStatsResponse = {
     message.volumeCondition !== undefined &&
       (obj.volumeCondition = message.volumeCondition ? VolumeCondition.toJSON(message.volumeCondition) : undefined);
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<NodeGetVolumeStatsResponse>, I>>(base?: I): NodeGetVolumeStatsResponse {
+    return NodeGetVolumeStatsResponse.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<NodeGetVolumeStatsResponse>, I>>(object: I): NodeGetVolumeStatsResponse {
@@ -11478,6 +11916,10 @@ export const VolumeUsage = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<VolumeUsage>, I>>(base?: I): VolumeUsage {
+    return VolumeUsage.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<VolumeUsage>, I>>(object: I): VolumeUsage {
     const message = createBaseVolumeUsage();
     message.available = (object.available !== undefined && object.available !== null)
@@ -11572,6 +12014,10 @@ export const VolumeCondition = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<VolumeCondition>, I>>(base?: I): VolumeCondition {
+    return VolumeCondition.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<VolumeCondition>, I>>(object: I): VolumeCondition {
     const message = createBaseVolumeCondition();
     message.abnormal = object.abnormal ?? false;
@@ -11645,6 +12091,10 @@ export const NodeGetCapabilitiesRequest = {
   toJSON(_: NodeGetCapabilitiesRequest): unknown {
     const obj: any = {};
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<NodeGetCapabilitiesRequest>, I>>(base?: I): NodeGetCapabilitiesRequest {
+    return NodeGetCapabilitiesRequest.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<NodeGetCapabilitiesRequest>, I>>(_: I): NodeGetCapabilitiesRequest {
@@ -11735,6 +12185,10 @@ export const NodeGetCapabilitiesResponse = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<NodeGetCapabilitiesResponse>, I>>(base?: I): NodeGetCapabilitiesResponse {
+    return NodeGetCapabilitiesResponse.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<NodeGetCapabilitiesResponse>, I>>(object: I): NodeGetCapabilitiesResponse {
     const message = createBaseNodeGetCapabilitiesResponse();
     message.capabilities = object.capabilities?.map((e) => NodeServiceCapability.fromPartial(e)) || [];
@@ -11817,6 +12271,10 @@ export const NodeServiceCapability = {
     message.type?.$case === "rpc" &&
       (obj.rpc = message.type?.rpc ? NodeServiceCapability_RPC.toJSON(message.type?.rpc) : undefined);
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<NodeServiceCapability>, I>>(base?: I): NodeServiceCapability {
+    return NodeServiceCapability.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<NodeServiceCapability>, I>>(object: I): NodeServiceCapability {
@@ -11902,6 +12360,10 @@ export const NodeServiceCapability_RPC = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<NodeServiceCapability_RPC>, I>>(base?: I): NodeServiceCapability_RPC {
+    return NodeServiceCapability_RPC.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<NodeServiceCapability_RPC>, I>>(object: I): NodeServiceCapability_RPC {
     const message = createBaseNodeServiceCapability_RPC();
     message.type = object.type ?? 0;
@@ -11974,6 +12436,10 @@ export const NodeGetInfoRequest = {
   toJSON(_: NodeGetInfoRequest): unknown {
     const obj: any = {};
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<NodeGetInfoRequest>, I>>(base?: I): NodeGetInfoRequest {
+    return NodeGetInfoRequest.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<NodeGetInfoRequest>, I>>(_: I): NodeGetInfoRequest {
@@ -12074,6 +12540,10 @@ export const NodeGetInfoResponse = {
     message.accessibleTopology !== undefined &&
       (obj.accessibleTopology = message.accessibleTopology ? Topology.toJSON(message.accessibleTopology) : undefined);
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<NodeGetInfoResponse>, I>>(base?: I): NodeGetInfoResponse {
+    return NodeGetInfoResponse.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<NodeGetInfoResponse>, I>>(object: I): NodeGetInfoResponse {
@@ -12227,6 +12697,10 @@ export const NodeExpandVolumeRequest = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<NodeExpandVolumeRequest>, I>>(base?: I): NodeExpandVolumeRequest {
+    return NodeExpandVolumeRequest.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<NodeExpandVolumeRequest>, I>>(object: I): NodeExpandVolumeRequest {
     const message = createBaseNodeExpandVolumeRequest();
     message.volumeId = object.volumeId ?? "";
@@ -12329,6 +12803,12 @@ export const NodeExpandVolumeRequest_SecretsEntry = {
     return obj;
   },
 
+  create<I extends Exact<DeepPartial<NodeExpandVolumeRequest_SecretsEntry>, I>>(
+    base?: I,
+  ): NodeExpandVolumeRequest_SecretsEntry {
+    return NodeExpandVolumeRequest_SecretsEntry.fromPartial(base ?? {});
+  },
+
   fromPartial<I extends Exact<DeepPartial<NodeExpandVolumeRequest_SecretsEntry>, I>>(
     object: I,
   ): NodeExpandVolumeRequest_SecretsEntry {
@@ -12411,6 +12891,10 @@ export const NodeExpandVolumeResponse = {
     const obj: any = {};
     message.capacityBytes !== undefined && (obj.capacityBytes = (message.capacityBytes || Long.ZERO).toString());
     return obj;
+  },
+
+  create<I extends Exact<DeepPartial<NodeExpandVolumeResponse>, I>>(base?: I): NodeExpandVolumeResponse {
+    return NodeExpandVolumeResponse.fromPartial(base ?? {});
   },
 
   fromPartial<I extends Exact<DeepPartial<NodeExpandVolumeResponse>, I>>(object: I): NodeExpandVolumeResponse {
