@@ -14,5 +14,5 @@
     "matchDepTypes": ["replace"],
     "enabled": false
   }],
-  "renovateFork": true
+  "forkProcessing": "enabled"
 }
