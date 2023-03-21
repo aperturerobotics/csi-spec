@@ -14,5 +14,6 @@
     "matchDepTypes": ["replace"],
     "enabled": false
   }],
-  "forkProcessing": "enabled"
+  "forkProcessing": "enabled",
+  "includeForks": true
 }
