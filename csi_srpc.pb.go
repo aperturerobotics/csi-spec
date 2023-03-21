@@ -760,6 +760,229 @@ type srpcController_ControllerGetVolumeStream struct {
 	srpc.Stream
 }
 
+type SRPCGroupControllerClient interface {
+	SRPCClient() srpc.Client
+
+	GroupControllerGetCapabilities(ctx context.Context, in *GroupControllerGetCapabilitiesRequest) (*GroupControllerGetCapabilitiesResponse, error)
+	CreateVolumeGroupSnapshot(ctx context.Context, in *CreateVolumeGroupSnapshotRequest) (*CreateVolumeGroupSnapshotResponse, error)
+	DeleteVolumeGroupSnapshot(ctx context.Context, in *DeleteVolumeGroupSnapshotRequest) (*DeleteVolumeGroupSnapshotResponse, error)
+	GetVolumeGroupSnapshot(ctx context.Context, in *GetVolumeGroupSnapshotRequest) (*GetVolumeGroupSnapshotResponse, error)
+}
+
+type srpcGroupControllerClient struct {
+	cc        srpc.Client
+	serviceID string
+}
+
+func NewSRPCGroupControllerClient(cc srpc.Client) SRPCGroupControllerClient {
+	return &srpcGroupControllerClient{cc: cc, serviceID: SRPCGroupControllerServiceID}
+}
+
+func NewSRPCGroupControllerClientWithServiceID(cc srpc.Client, serviceID string) SRPCGroupControllerClient {
+	if serviceID == "" {
+		serviceID = SRPCGroupControllerServiceID
+	}
+	return &srpcGroupControllerClient{cc: cc, serviceID: serviceID}
+}
+
+func (c *srpcGroupControllerClient) SRPCClient() srpc.Client { return c.cc }
+
+func (c *srpcGroupControllerClient) GroupControllerGetCapabilities(ctx context.Context, in *GroupControllerGetCapabilitiesRequest) (*GroupControllerGetCapabilitiesResponse, error) {
+	out := new(GroupControllerGetCapabilitiesResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "GroupControllerGetCapabilities", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *srpcGroupControllerClient) CreateVolumeGroupSnapshot(ctx context.Context, in *CreateVolumeGroupSnapshotRequest) (*CreateVolumeGroupSnapshotResponse, error) {
+	out := new(CreateVolumeGroupSnapshotResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "CreateVolumeGroupSnapshot", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *srpcGroupControllerClient) DeleteVolumeGroupSnapshot(ctx context.Context, in *DeleteVolumeGroupSnapshotRequest) (*DeleteVolumeGroupSnapshotResponse, error) {
+	out := new(DeleteVolumeGroupSnapshotResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "DeleteVolumeGroupSnapshot", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *srpcGroupControllerClient) GetVolumeGroupSnapshot(ctx context.Context, in *GetVolumeGroupSnapshotRequest) (*GetVolumeGroupSnapshotResponse, error) {
+	out := new(GetVolumeGroupSnapshotResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "GetVolumeGroupSnapshot", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+type SRPCGroupControllerServer interface {
+	GroupControllerGetCapabilities(context.Context, *GroupControllerGetCapabilitiesRequest) (*GroupControllerGetCapabilitiesResponse, error)
+	CreateVolumeGroupSnapshot(context.Context, *CreateVolumeGroupSnapshotRequest) (*CreateVolumeGroupSnapshotResponse, error)
+	DeleteVolumeGroupSnapshot(context.Context, *DeleteVolumeGroupSnapshotRequest) (*DeleteVolumeGroupSnapshotResponse, error)
+	GetVolumeGroupSnapshot(context.Context, *GetVolumeGroupSnapshotRequest) (*GetVolumeGroupSnapshotResponse, error)
+}
+
+type SRPCGroupControllerUnimplementedServer struct{}
+
+func (s *SRPCGroupControllerUnimplementedServer) GroupControllerGetCapabilities(context.Context, *GroupControllerGetCapabilitiesRequest) (*GroupControllerGetCapabilitiesResponse, error) {
+	return nil, srpc.ErrUnimplemented
+}
+
+func (s *SRPCGroupControllerUnimplementedServer) CreateVolumeGroupSnapshot(context.Context, *CreateVolumeGroupSnapshotRequest) (*CreateVolumeGroupSnapshotResponse, error) {
+	return nil, srpc.ErrUnimplemented
+}
+
+func (s *SRPCGroupControllerUnimplementedServer) DeleteVolumeGroupSnapshot(context.Context, *DeleteVolumeGroupSnapshotRequest) (*DeleteVolumeGroupSnapshotResponse, error) {
+	return nil, srpc.ErrUnimplemented
+}
+
+func (s *SRPCGroupControllerUnimplementedServer) GetVolumeGroupSnapshot(context.Context, *GetVolumeGroupSnapshotRequest) (*GetVolumeGroupSnapshotResponse, error) {
+	return nil, srpc.ErrUnimplemented
+}
+
+const SRPCGroupControllerServiceID = "csi.v1.GroupController"
+
+type SRPCGroupControllerHandler struct {
+	serviceID string
+	impl      SRPCGroupControllerServer
+}
+
+// NewSRPCGroupControllerHandler constructs a new RPC handler.
+// serviceID: if empty, uses default: csi.v1.GroupController
+func NewSRPCGroupControllerHandler(impl SRPCGroupControllerServer, serviceID string) srpc.Handler {
+	if serviceID == "" {
+		serviceID = SRPCGroupControllerServiceID
+	}
+	return &SRPCGroupControllerHandler{impl: impl, serviceID: serviceID}
+}
+
+// SRPCRegisterGroupController registers the implementation with the mux.
+// Uses the default serviceID: csi.v1.GroupController
+func SRPCRegisterGroupController(mux srpc.Mux, impl SRPCGroupControllerServer) error {
+	return mux.Register(NewSRPCGroupControllerHandler(impl, ""))
+}
+
+func (d *SRPCGroupControllerHandler) GetServiceID() string { return d.serviceID }
+
+func (SRPCGroupControllerHandler) GetMethodIDs() []string {
+	return []string{
+		"GroupControllerGetCapabilities",
+		"CreateVolumeGroupSnapshot",
+		"DeleteVolumeGroupSnapshot",
+		"GetVolumeGroupSnapshot",
+	}
+}
+
+func (d *SRPCGroupControllerHandler) InvokeMethod(
+	serviceID, methodID string,
+	strm srpc.Stream,
+) (bool, error) {
+	if serviceID != "" && serviceID != d.GetServiceID() {
+		return false, nil
+	}
+
+	switch methodID {
+	case "GroupControllerGetCapabilities":
+		return true, d.InvokeMethod_GroupControllerGetCapabilities(d.impl, strm)
+	case "CreateVolumeGroupSnapshot":
+		return true, d.InvokeMethod_CreateVolumeGroupSnapshot(d.impl, strm)
+	case "DeleteVolumeGroupSnapshot":
+		return true, d.InvokeMethod_DeleteVolumeGroupSnapshot(d.impl, strm)
+	case "GetVolumeGroupSnapshot":
+		return true, d.InvokeMethod_GetVolumeGroupSnapshot(d.impl, strm)
+	default:
+		return false, nil
+	}
+}
+
+func (SRPCGroupControllerHandler) InvokeMethod_GroupControllerGetCapabilities(impl SRPCGroupControllerServer, strm srpc.Stream) error {
+	req := new(GroupControllerGetCapabilitiesRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	out, err := impl.GroupControllerGetCapabilities(strm.Context(), req)
+	if err != nil {
+		return err
+	}
+	return strm.MsgSend(out)
+}
+
+func (SRPCGroupControllerHandler) InvokeMethod_CreateVolumeGroupSnapshot(impl SRPCGroupControllerServer, strm srpc.Stream) error {
+	req := new(CreateVolumeGroupSnapshotRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	out, err := impl.CreateVolumeGroupSnapshot(strm.Context(), req)
+	if err != nil {
+		return err
+	}
+	return strm.MsgSend(out)
+}
+
+func (SRPCGroupControllerHandler) InvokeMethod_DeleteVolumeGroupSnapshot(impl SRPCGroupControllerServer, strm srpc.Stream) error {
+	req := new(DeleteVolumeGroupSnapshotRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	out, err := impl.DeleteVolumeGroupSnapshot(strm.Context(), req)
+	if err != nil {
+		return err
+	}
+	return strm.MsgSend(out)
+}
+
+func (SRPCGroupControllerHandler) InvokeMethod_GetVolumeGroupSnapshot(impl SRPCGroupControllerServer, strm srpc.Stream) error {
+	req := new(GetVolumeGroupSnapshotRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	out, err := impl.GetVolumeGroupSnapshot(strm.Context(), req)
+	if err != nil {
+		return err
+	}
+	return strm.MsgSend(out)
+}
+
+type SRPCGroupController_GroupControllerGetCapabilitiesStream interface {
+	srpc.Stream
+}
+
+type srpcGroupController_GroupControllerGetCapabilitiesStream struct {
+	srpc.Stream
+}
+
+type SRPCGroupController_CreateVolumeGroupSnapshotStream interface {
+	srpc.Stream
+}
+
+type srpcGroupController_CreateVolumeGroupSnapshotStream struct {
+	srpc.Stream
+}
+
+type SRPCGroupController_DeleteVolumeGroupSnapshotStream interface {
+	srpc.Stream
+}
+
+type srpcGroupController_DeleteVolumeGroupSnapshotStream struct {
+	srpc.Stream
+}
+
+type SRPCGroupController_GetVolumeGroupSnapshotStream interface {
+	srpc.Stream
+}
+
+type srpcGroupController_GetVolumeGroupSnapshotStream struct {
+	srpc.Stream
+}
+
 type SRPCNodeClient interface {
 	SRPCClient() srpc.Client
 

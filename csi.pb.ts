@@ -78,6 +78,16 @@ export enum PluginCapability_Service_Type {
    * accessible from a given node when scheduling workloads.
    */
   VOLUME_ACCESSIBILITY_CONSTRAINTS = 2,
+  /**
+   * GROUP_CONTROLLER_SERVICE - GROUP_CONTROLLER_SERVICE indicates that the Plugin provides
+   * RPCs for operating on groups of volumes. Plugins MAY provide
+   * this capability.
+   * The presence of this capability determines whether the CO will
+   * attempt to invoke the REQUIRED GroupController service RPCs, as
+   * well as specific RPCs as indicated by
+   * GroupControllerGetCapabilities.
+   */
+  GROUP_CONTROLLER_SERVICE = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -92,6 +102,9 @@ export function pluginCapability_Service_TypeFromJSON(object: any): PluginCapabi
     case 2:
     case "VOLUME_ACCESSIBILITY_CONSTRAINTS":
       return PluginCapability_Service_Type.VOLUME_ACCESSIBILITY_CONSTRAINTS;
+    case 3:
+    case "GROUP_CONTROLLER_SERVICE":
+      return PluginCapability_Service_Type.GROUP_CONTROLLER_SERVICE;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -107,6 +120,8 @@ export function pluginCapability_Service_TypeToJSON(object: PluginCapability_Ser
       return "CONTROLLER_SERVICE";
     case PluginCapability_Service_Type.VOLUME_ACCESSIBILITY_CONSTRAINTS:
       return "VOLUME_ACCESSIBILITY_CONSTRAINTS";
+    case PluginCapability_Service_Type.GROUP_CONTROLLER_SERVICE:
+      return "GROUP_CONTROLLER_SERVICE";
     case PluginCapability_Service_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -1477,6 +1492,22 @@ export interface Snapshot {
    * value is false. This field is REQUIRED.
    */
   readyToUse: boolean;
+  /**
+   * The ID of the volume group snapshot that this snapshot is part of.
+   * It uniquely identifies the group snapshot on the storage system.
+   * This field is OPTIONAL.
+   * If this snapshot is a member of a volume group snapshot, and it
+   * MUST NOT be deleted as a stand alone snapshot, then the SP
+   * MUST provide the ID of the volume group snapshot in this field.
+   * If provided, CO MUST use this field in subsequent volume group
+   * snapshot operations to indicate that this snapshot is part of the
+   * specified group snapshot.
+   * If not provided, CO SHALL treat the snapshot as independent,
+   * and SP SHALL allow it to be deleted separately.
+   * If this message is inside a VolumeGroupSnapshot message, the value
+   * MUST be the same as the group_snapshot_id in that message.
+   */
+  groupSnapshotId: string;
 }
 
 export interface DeleteSnapshotRequest {
@@ -2159,6 +2190,234 @@ export interface NodeExpandVolumeResponse {
   capacityBytes: Long;
 }
 
+export interface GroupControllerGetCapabilitiesRequest {
+}
+
+export interface GroupControllerGetCapabilitiesResponse {
+  /**
+   * All the capabilities that the group controller service supports.
+   * This field is OPTIONAL.
+   */
+  capabilities: GroupControllerServiceCapability[];
+}
+
+/** Specifies a capability of the group controller service. */
+export interface GroupControllerServiceCapability {
+  type?: { $case: "rpc"; rpc: GroupControllerServiceCapability_RPC };
+}
+
+export interface GroupControllerServiceCapability_RPC {
+  type: GroupControllerServiceCapability_RPC_Type;
+}
+
+export enum GroupControllerServiceCapability_RPC_Type {
+  UNKNOWN = 0,
+  /**
+   * CREATE_DELETE_GET_VOLUME_GROUP_SNAPSHOT - Indicates that the group controller plugin supports
+   * creating, deleting, and getting details of a volume
+   * group snapshot.
+   */
+  CREATE_DELETE_GET_VOLUME_GROUP_SNAPSHOT = 1,
+  UNRECOGNIZED = -1,
+}
+
+export function groupControllerServiceCapability_RPC_TypeFromJSON(
+  object: any,
+): GroupControllerServiceCapability_RPC_Type {
+  switch (object) {
+    case 0:
+    case "UNKNOWN":
+      return GroupControllerServiceCapability_RPC_Type.UNKNOWN;
+    case 1:
+    case "CREATE_DELETE_GET_VOLUME_GROUP_SNAPSHOT":
+      return GroupControllerServiceCapability_RPC_Type.CREATE_DELETE_GET_VOLUME_GROUP_SNAPSHOT;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return GroupControllerServiceCapability_RPC_Type.UNRECOGNIZED;
+  }
+}
+
+export function groupControllerServiceCapability_RPC_TypeToJSON(
+  object: GroupControllerServiceCapability_RPC_Type,
+): string {
+  switch (object) {
+    case GroupControllerServiceCapability_RPC_Type.UNKNOWN:
+      return "UNKNOWN";
+    case GroupControllerServiceCapability_RPC_Type.CREATE_DELETE_GET_VOLUME_GROUP_SNAPSHOT:
+      return "CREATE_DELETE_GET_VOLUME_GROUP_SNAPSHOT";
+    case GroupControllerServiceCapability_RPC_Type.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export interface CreateVolumeGroupSnapshotRequest {
+  /**
+   * The suggested name for the group snapshot. This field is REQUIRED
+   * for idempotency.
+   * Any Unicode string that conforms to the length limit is allowed
+   * except those containing the following banned characters:
+   * U+0000-U+0008, U+000B, U+000C, U+000E-U+001F, U+007F-U+009F.
+   * (These are control characters other than commonly used whitespace.)
+   */
+  name: string;
+  /**
+   * volume IDs of the source volumes to be snapshotted together.
+   * This field is REQUIRED.
+   */
+  sourceVolumeIds: string[];
+  /**
+   * Secrets required by plugin to complete
+   * ControllerCreateVolumeGroupSnapshot request.
+   * This field is OPTIONAL. Refer to the `Secrets Requirements`
+   * section on how to use this field.
+   * The secrets provided in this field SHOULD be the same for
+   * all group snapshot operations on the same group snapshot.
+   */
+  secrets: { [key: string]: string };
+  /**
+   * Plugin specific parameters passed in as opaque key-value pairs.
+   * This field is OPTIONAL. The Plugin is responsible for parsing and
+   * validating these parameters. COs will treat these as opaque.
+   */
+  parameters: { [key: string]: string };
+}
+
+export interface CreateVolumeGroupSnapshotRequest_SecretsEntry {
+  key: string;
+  value: string;
+}
+
+export interface CreateVolumeGroupSnapshotRequest_ParametersEntry {
+  key: string;
+  value: string;
+}
+
+export interface CreateVolumeGroupSnapshotResponse {
+  /**
+   * Contains all attributes of the newly created group snapshot.
+   * This field is REQUIRED.
+   */
+  groupSnapshot: VolumeGroupSnapshot | undefined;
+}
+
+export interface VolumeGroupSnapshot {
+  /**
+   * The identifier for this group snapshot, generated by the plugin.
+   * This field MUST contain enough information to uniquely identify
+   * this specific snapshot vs all other group snapshots supported by
+   * this plugin.
+   * This field SHALL be used by the CO in subsequent calls to refer to
+   * this group snapshot.
+   * The SP is NOT responsible for global uniqueness of
+   * group_snapshot_id across multiple SPs.
+   * This field is REQUIRED.
+   */
+  groupSnapshotId: string;
+  /**
+   * A list of snapshots belonging to this group.
+   * This field is REQUIRED.
+   */
+  snapshots: Snapshot[];
+  /**
+   * Timestamp of when the volume group snapshot was taken.
+   * This field is REQUIRED.
+   */
+  creationTime:
+    | Date
+    | undefined;
+  /**
+   * Indicates if all individual snapshots in the group snapshot
+   * are ready to use as a `volume_content_source` in a
+   * `CreateVolumeRequest`. The default value is false.
+   * If any snapshot in the list of snapshots in this message have
+   * ready_to_use set to false, the SP MUST set this field to false.
+   * If all of the snapshots in the list of snapshots in this message
+   * have ready_to_use set to true, the SP SHOULD set this field to
+   * true.
+   * This field is REQUIRED.
+   */
+  readyToUse: boolean;
+}
+
+export interface DeleteVolumeGroupSnapshotRequest {
+  /**
+   * The ID of the group snapshot to be deleted.
+   * This field is REQUIRED.
+   */
+  groupSnapshotId: string;
+  /**
+   * A list of snapshot IDs that are part of this group snapshot.
+   * If SP does not need to rely on this field to delete the snapshots
+   * in the group, it SHOULD check this field and report an error
+   * if it has the ability to detect a mismatch.
+   * Some SPs require this list to delete the snapshots in the group.
+   * If SP needs to use this field to delete the snapshots in the
+   * group, it MUST report an error if it has the ability to detect
+   * a mismatch.
+   * This field is REQUIRED.
+   */
+  snapshotIds: string[];
+  /**
+   * Secrets required by plugin to complete group snapshot deletion
+   * request.
+   * This field is OPTIONAL. Refer to the `Secrets Requirements`
+   * section on how to use this field.
+   * The secrets provided in this field SHOULD be the same for
+   * all group snapshot operations on the same group snapshot.
+   */
+  secrets: { [key: string]: string };
+}
+
+export interface DeleteVolumeGroupSnapshotRequest_SecretsEntry {
+  key: string;
+  value: string;
+}
+
+export interface DeleteVolumeGroupSnapshotResponse {
+}
+
+export interface GetVolumeGroupSnapshotRequest {
+  /**
+   * The ID of the group snapshot to fetch current group snapshot
+   * information for.
+   * This field is REQUIRED.
+   */
+  groupSnapshotId: string;
+  /**
+   * A list of snapshot IDs that are part of this group snapshot.
+   * If SP does not need to rely on this field to get the snapshots
+   * in the group, it SHOULD check this field and report an error
+   * if it has the ability to detect a mismatch.
+   * Some SPs require this list to get the snapshots in the group.
+   * If SP needs to use this field to get the snapshots in the
+   * group, it MUST report an error if it has the ability to detect
+   * a mismatch.
+   * This field is REQUIRED.
+   */
+  snapshotIds: string[];
+  /**
+   * Secrets required by plugin to complete
+   * GetVolumeGroupSnapshot request.
+   * This field is OPTIONAL. Refer to the `Secrets Requirements`
+   * section on how to use this field.
+   * The secrets provided in this field SHOULD be the same for
+   * all group snapshot operations on the same group snapshot.
+   */
+  secrets: { [key: string]: string };
+}
+
+export interface GetVolumeGroupSnapshotRequest_SecretsEntry {
+  key: string;
+  value: string;
+}
+
+export interface GetVolumeGroupSnapshotResponse {
+  /** This field is REQUIRED */
+  groupSnapshot: VolumeGroupSnapshot | undefined;
+}
+
 function createBaseGetPluginInfoRequest(): GetPluginInfoRequest {
   return {};
 }
@@ -2169,16 +2428,17 @@ export const GetPluginInfoRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetPluginInfoRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetPluginInfoRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        default:
-          reader.skipType(tag & 7);
-          break;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -2255,28 +2515,41 @@ export const GetPluginInfoResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetPluginInfoResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetPluginInfoResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.vendorVersion = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           const entry3 = GetPluginInfoResponse_ManifestEntry.decode(reader, reader.uint32());
           if (entry3.value !== undefined) {
             message.manifest[entry3.key] = entry3.value;
           }
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -2375,22 +2648,31 @@ export const GetPluginInfoResponse_ManifestEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetPluginInfoResponse_ManifestEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetPluginInfoResponse_ManifestEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -2466,16 +2748,17 @@ export const GetPluginCapabilitiesRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetPluginCapabilitiesRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetPluginCapabilitiesRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        default:
-          reader.skipType(tag & 7);
-          break;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -2546,19 +2829,24 @@ export const GetPluginCapabilitiesResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetPluginCapabilitiesResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetPluginCapabilitiesResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.capabilities.push(PluginCapability.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -2634,35 +2922,46 @@ function createBasePluginCapability(): PluginCapability {
 
 export const PluginCapability = {
   encode(message: PluginCapability, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.type?.$case === "service") {
-      PluginCapability_Service.encode(message.type.service, writer.uint32(10).fork()).ldelim();
-    }
-    if (message.type?.$case === "volumeExpansion") {
-      PluginCapability_VolumeExpansion.encode(message.type.volumeExpansion, writer.uint32(18).fork()).ldelim();
+    switch (message.type?.$case) {
+      case "service":
+        PluginCapability_Service.encode(message.type.service, writer.uint32(10).fork()).ldelim();
+        break;
+      case "volumeExpansion":
+        PluginCapability_VolumeExpansion.encode(message.type.volumeExpansion, writer.uint32(18).fork()).ldelim();
+        break;
     }
     return writer;
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): PluginCapability {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePluginCapability();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.type = { $case: "service", service: PluginCapability_Service.decode(reader, reader.uint32()) };
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.type = {
             $case: "volumeExpansion",
             volumeExpansion: PluginCapability_VolumeExpansion.decode(reader, reader.uint32()),
           };
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -2759,19 +3058,24 @@ export const PluginCapability_Service = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): PluginCapability_Service {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePluginCapability_Service();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.type = reader.int32() as any;
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -2844,19 +3148,24 @@ export const PluginCapability_VolumeExpansion = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): PluginCapability_VolumeExpansion {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePluginCapability_VolumeExpansion();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.type = reader.int32() as any;
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -2930,16 +3239,17 @@ export const ProbeRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ProbeRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseProbeRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        default:
-          reader.skipType(tag & 7);
-          break;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -3008,19 +3318,24 @@ export const ProbeResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ProbeResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseProbeResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.ready = BoolValue.decode(reader, reader.uint32()).value;
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -3117,43 +3432,72 @@ export const CreateVolumeRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): CreateVolumeRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCreateVolumeRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.capacityRange = CapacityRange.decode(reader, reader.uint32());
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.volumeCapabilities.push(VolumeCapability.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           const entry4 = CreateVolumeRequest_ParametersEntry.decode(reader, reader.uint32());
           if (entry4.value !== undefined) {
             message.parameters[entry4.key] = entry4.value;
           }
-          break;
+          continue;
         case 5:
+          if (tag != 42) {
+            break;
+          }
+
           const entry5 = CreateVolumeRequest_SecretsEntry.decode(reader, reader.uint32());
           if (entry5.value !== undefined) {
             message.secrets[entry5.key] = entry5.value;
           }
-          break;
+          continue;
         case 6:
+          if (tag != 50) {
+            break;
+          }
+
           message.volumeContentSource = VolumeContentSource.decode(reader, reader.uint32());
-          break;
+          continue;
         case 7:
+          if (tag != 58) {
+            break;
+          }
+
           message.accessibilityRequirements = TopologyRequirement.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -3306,22 +3650,31 @@ export const CreateVolumeRequest_ParametersEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): CreateVolumeRequest_ParametersEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCreateVolumeRequest_ParametersEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -3403,22 +3756,31 @@ export const CreateVolumeRequest_SecretsEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): CreateVolumeRequest_SecretsEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCreateVolumeRequest_SecretsEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -3490,35 +3852,46 @@ function createBaseVolumeContentSource(): VolumeContentSource {
 
 export const VolumeContentSource = {
   encode(message: VolumeContentSource, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.type?.$case === "snapshot") {
-      VolumeContentSource_SnapshotSource.encode(message.type.snapshot, writer.uint32(10).fork()).ldelim();
-    }
-    if (message.type?.$case === "volume") {
-      VolumeContentSource_VolumeSource.encode(message.type.volume, writer.uint32(18).fork()).ldelim();
+    switch (message.type?.$case) {
+      case "snapshot":
+        VolumeContentSource_SnapshotSource.encode(message.type.snapshot, writer.uint32(10).fork()).ldelim();
+        break;
+      case "volume":
+        VolumeContentSource_VolumeSource.encode(message.type.volume, writer.uint32(18).fork()).ldelim();
+        break;
     }
     return writer;
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): VolumeContentSource {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseVolumeContentSource();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.type = {
             $case: "snapshot",
             snapshot: VolumeContentSource_SnapshotSource.decode(reader, reader.uint32()),
           };
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.type = { $case: "volume", volume: VolumeContentSource_VolumeSource.decode(reader, reader.uint32()) };
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -3610,19 +3983,24 @@ export const VolumeContentSource_SnapshotSource = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): VolumeContentSource_SnapshotSource {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseVolumeContentSource_SnapshotSource();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.snapshotId = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -3699,19 +4077,24 @@ export const VolumeContentSource_VolumeSource = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): VolumeContentSource_VolumeSource {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseVolumeContentSource_VolumeSource();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.volumeId = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -3788,19 +4171,24 @@ export const CreateVolumeResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): CreateVolumeResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCreateVolumeResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.volume = Volume.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -3868,11 +4256,13 @@ function createBaseVolumeCapability(): VolumeCapability {
 
 export const VolumeCapability = {
   encode(message: VolumeCapability, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.accessType?.$case === "block") {
-      VolumeCapability_BlockVolume.encode(message.accessType.block, writer.uint32(10).fork()).ldelim();
-    }
-    if (message.accessType?.$case === "mount") {
-      VolumeCapability_MountVolume.encode(message.accessType.mount, writer.uint32(18).fork()).ldelim();
+    switch (message.accessType?.$case) {
+      case "block":
+        VolumeCapability_BlockVolume.encode(message.accessType.block, writer.uint32(10).fork()).ldelim();
+        break;
+      case "mount":
+        VolumeCapability_MountVolume.encode(message.accessType.mount, writer.uint32(18).fork()).ldelim();
+        break;
     }
     if (message.accessMode !== undefined) {
       VolumeCapability_AccessMode.encode(message.accessMode, writer.uint32(26).fork()).ldelim();
@@ -3881,25 +4271,38 @@ export const VolumeCapability = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): VolumeCapability {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseVolumeCapability();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.accessType = { $case: "block", block: VolumeCapability_BlockVolume.decode(reader, reader.uint32()) };
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.accessType = { $case: "mount", mount: VolumeCapability_MountVolume.decode(reader, reader.uint32()) };
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.accessMode = VolumeCapability_AccessMode.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -3999,16 +4402,17 @@ export const VolumeCapability_BlockVolume = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): VolumeCapability_BlockVolume {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseVolumeCapability_BlockVolume();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        default:
-          reader.skipType(tag & 7);
-          break;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -4085,25 +4489,38 @@ export const VolumeCapability_MountVolume = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): VolumeCapability_MountVolume {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseVolumeCapability_MountVolume();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.fsType = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.mountFlags.push(reader.string());
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.volumeMountGroup = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -4188,19 +4605,24 @@ export const VolumeCapability_AccessMode = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): VolumeCapability_AccessMode {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseVolumeCapability_AccessMode();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.mode = reader.int32() as any;
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -4276,22 +4698,31 @@ export const CapacityRange = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): CapacityRange {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCapacityRange();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.requiredBytes = reader.int64() as Long;
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.limitBytes = reader.int64() as Long;
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -4389,34 +4820,55 @@ export const Volume = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Volume {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseVolume();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.capacityBytes = reader.int64() as Long;
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.volumeId = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           const entry3 = Volume_VolumeContextEntry.decode(reader, reader.uint32());
           if (entry3.value !== undefined) {
             message.volumeContext[entry3.key] = entry3.value;
           }
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.contentSource = VolumeContentSource.decode(reader, reader.uint32());
-          break;
+          continue;
         case 5:
+          if (tag != 42) {
+            break;
+          }
+
           message.accessibleTopology.push(Topology.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -4533,22 +4985,31 @@ export const Volume_VolumeContextEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Volume_VolumeContextEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseVolume_VolumeContextEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -4626,22 +5087,31 @@ export const TopologyRequirement = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): TopologyRequirement {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseTopologyRequirement();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.requisite.push(Topology.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.preferred.push(Topology.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -4727,22 +5197,27 @@ export const Topology = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Topology {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseTopology();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           const entry1 = Topology_SegmentsEntry.decode(reader, reader.uint32());
           if (entry1.value !== undefined) {
             message.segments[entry1.key] = entry1.value;
           }
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -4833,22 +5308,31 @@ export const Topology_SegmentsEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Topology_SegmentsEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseTopology_SegmentsEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -4926,25 +5410,34 @@ export const DeleteVolumeRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): DeleteVolumeRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDeleteVolumeRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.volumeId = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           const entry2 = DeleteVolumeRequest_SecretsEntry.decode(reader, reader.uint32());
           if (entry2.value !== undefined) {
             message.secrets[entry2.key] = entry2.value;
           }
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -5040,22 +5533,31 @@ export const DeleteVolumeRequest_SecretsEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): DeleteVolumeRequest_SecretsEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDeleteVolumeRequest_SecretsEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -5131,16 +5633,17 @@ export const DeleteVolumeResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): DeleteVolumeResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDeleteVolumeResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        default:
-          reader.skipType(tag & 7);
-          break;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -5227,40 +5730,65 @@ export const ControllerPublishVolumeRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ControllerPublishVolumeRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseControllerPublishVolumeRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.volumeId = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.nodeId = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.volumeCapability = VolumeCapability.decode(reader, reader.uint32());
-          break;
+          continue;
         case 4:
+          if (tag != 32) {
+            break;
+          }
+
           message.readonly = reader.bool();
-          break;
+          continue;
         case 5:
+          if (tag != 42) {
+            break;
+          }
+
           const entry5 = ControllerPublishVolumeRequest_SecretsEntry.decode(reader, reader.uint32());
           if (entry5.value !== undefined) {
             message.secrets[entry5.key] = entry5.value;
           }
-          break;
+          continue;
         case 6:
+          if (tag != 50) {
+            break;
+          }
+
           const entry6 = ControllerPublishVolumeRequest_VolumeContextEntry.decode(reader, reader.uint32());
           if (entry6.value !== undefined) {
             message.volumeContext[entry6.key] = entry6.value;
           }
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -5391,22 +5919,31 @@ export const ControllerPublishVolumeRequest_SecretsEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ControllerPublishVolumeRequest_SecretsEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseControllerPublishVolumeRequest_SecretsEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -5491,22 +6028,31 @@ export const ControllerPublishVolumeRequest_VolumeContextEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ControllerPublishVolumeRequest_VolumeContextEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseControllerPublishVolumeRequest_VolumeContextEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -5590,22 +6136,27 @@ export const ControllerPublishVolumeResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ControllerPublishVolumeResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseControllerPublishVolumeResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           const entry1 = ControllerPublishVolumeResponse_PublishContextEntry.decode(reader, reader.uint32());
           if (entry1.value !== undefined) {
             message.publishContext[entry1.key] = entry1.value;
           }
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -5706,22 +6257,31 @@ export const ControllerPublishVolumeResponse_PublishContextEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ControllerPublishVolumeResponse_PublishContextEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseControllerPublishVolumeResponse_PublishContextEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -5811,28 +6371,41 @@ export const ControllerUnpublishVolumeRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ControllerUnpublishVolumeRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseControllerUnpublishVolumeRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.volumeId = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.nodeId = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           const entry3 = ControllerUnpublishVolumeRequest_SecretsEntry.decode(reader, reader.uint32());
           if (entry3.value !== undefined) {
             message.secrets[entry3.key] = entry3.value;
           }
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -5935,22 +6508,31 @@ export const ControllerUnpublishVolumeRequest_SecretsEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ControllerUnpublishVolumeRequest_SecretsEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseControllerUnpublishVolumeRequest_SecretsEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -6026,16 +6608,17 @@ export const ControllerUnpublishVolumeResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ControllerUnpublishVolumeResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseControllerUnpublishVolumeResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        default:
-          reader.skipType(tag & 7);
-          break;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -6125,40 +6708,61 @@ export const ValidateVolumeCapabilitiesRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ValidateVolumeCapabilitiesRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseValidateVolumeCapabilitiesRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.volumeId = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           const entry2 = ValidateVolumeCapabilitiesRequest_VolumeContextEntry.decode(reader, reader.uint32());
           if (entry2.value !== undefined) {
             message.volumeContext[entry2.key] = entry2.value;
           }
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.volumeCapabilities.push(VolumeCapability.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           const entry4 = ValidateVolumeCapabilitiesRequest_ParametersEntry.decode(reader, reader.uint32());
           if (entry4.value !== undefined) {
             message.parameters[entry4.key] = entry4.value;
           }
-          break;
+          continue;
         case 5:
+          if (tag != 42) {
+            break;
+          }
+
           const entry5 = ValidateVolumeCapabilitiesRequest_SecretsEntry.decode(reader, reader.uint32());
           if (entry5.value !== undefined) {
             message.secrets[entry5.key] = entry5.value;
           }
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -6312,22 +6916,31 @@ export const ValidateVolumeCapabilitiesRequest_VolumeContextEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ValidateVolumeCapabilitiesRequest_VolumeContextEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseValidateVolumeCapabilitiesRequest_VolumeContextEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -6416,22 +7029,31 @@ export const ValidateVolumeCapabilitiesRequest_ParametersEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ValidateVolumeCapabilitiesRequest_ParametersEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseValidateVolumeCapabilitiesRequest_ParametersEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -6520,22 +7142,31 @@ export const ValidateVolumeCapabilitiesRequest_SecretsEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ValidateVolumeCapabilitiesRequest_SecretsEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseValidateVolumeCapabilitiesRequest_SecretsEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -6617,22 +7248,31 @@ export const ValidateVolumeCapabilitiesResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ValidateVolumeCapabilitiesResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseValidateVolumeCapabilitiesResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.confirmed = ValidateVolumeCapabilitiesResponse_Confirmed.decode(reader, reader.uint32());
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.message = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -6733,13 +7373,17 @@ export const ValidateVolumeCapabilitiesResponse_Confirmed = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ValidateVolumeCapabilitiesResponse_Confirmed {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseValidateVolumeCapabilitiesResponse_Confirmed();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           const entry1 = ValidateVolumeCapabilitiesResponse_Confirmed_VolumeContextEntry.decode(
             reader,
             reader.uint32(),
@@ -6747,20 +7391,29 @@ export const ValidateVolumeCapabilitiesResponse_Confirmed = {
           if (entry1.value !== undefined) {
             message.volumeContext[entry1.key] = entry1.value;
           }
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.volumeCapabilities.push(VolumeCapability.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           const entry3 = ValidateVolumeCapabilitiesResponse_Confirmed_ParametersEntry.decode(reader, reader.uint32());
           if (entry3.value !== undefined) {
             message.parameters[entry3.key] = entry3.value;
           }
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -6896,22 +7549,31 @@ export const ValidateVolumeCapabilitiesResponse_Confirmed_VolumeContextEntry = {
     input: _m0.Reader | Uint8Array,
     length?: number,
   ): ValidateVolumeCapabilitiesResponse_Confirmed_VolumeContextEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseValidateVolumeCapabilitiesResponse_Confirmed_VolumeContextEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -7005,22 +7667,31 @@ export const ValidateVolumeCapabilitiesResponse_Confirmed_ParametersEntry = {
     input: _m0.Reader | Uint8Array,
     length?: number,
   ): ValidateVolumeCapabilitiesResponse_Confirmed_ParametersEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseValidateVolumeCapabilitiesResponse_Confirmed_ParametersEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -7108,22 +7779,31 @@ export const ListVolumesRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListVolumesRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListVolumesRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.maxEntries = reader.int32();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.startingToken = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -7204,22 +7884,31 @@ export const ListVolumesResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListVolumesResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListVolumesResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.entries.push(ListVolumesResponse_Entry.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.nextToken = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -7306,22 +7995,31 @@ export const ListVolumesResponse_VolumeStatus = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListVolumesResponse_VolumeStatus {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListVolumesResponse_VolumeStatus();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.publishedNodeIds.push(reader.string());
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.volumeCondition = VolumeCondition.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -7415,22 +8113,31 @@ export const ListVolumesResponse_Entry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListVolumesResponse_Entry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListVolumesResponse_Entry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.volume = Volume.decode(reader, reader.uint32());
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.status = ListVolumesResponse_VolumeStatus.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -7513,19 +8220,24 @@ export const ControllerGetVolumeRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ControllerGetVolumeRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseControllerGetVolumeRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.volumeId = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -7601,22 +8313,31 @@ export const ControllerGetVolumeResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ControllerGetVolumeResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseControllerGetVolumeResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.volume = Volume.decode(reader, reader.uint32());
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.status = ControllerGetVolumeResponse_VolumeStatus.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -7702,22 +8423,31 @@ export const ControllerGetVolumeResponse_VolumeStatus = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ControllerGetVolumeResponse_VolumeStatus {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseControllerGetVolumeResponse_VolumeStatus();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.publishedNodeIds.push(reader.string());
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.volumeCondition = VolumeCondition.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -7814,28 +8544,41 @@ export const GetCapacityRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetCapacityRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetCapacityRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.volumeCapabilities.push(VolumeCapability.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           const entry2 = GetCapacityRequest_ParametersEntry.decode(reader, reader.uint32());
           if (entry2.value !== undefined) {
             message.parameters[entry2.key] = entry2.value;
           }
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.accessibleTopology = Topology.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -7946,22 +8689,31 @@ export const GetCapacityRequest_ParametersEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetCapacityRequest_ParametersEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetCapacityRequest_ParametersEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -8046,25 +8798,38 @@ export const GetCapacityResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): GetCapacityResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseGetCapacityResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.availableCapacity = reader.int64() as Long;
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.maximumVolumeSize = Int64Value.decode(reader, reader.uint32()).value;
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.minimumVolumeSize = Int64Value.decode(reader, reader.uint32()).value;
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -8149,16 +8914,17 @@ export const ControllerGetCapabilitiesRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ControllerGetCapabilitiesRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseControllerGetCapabilitiesRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        default:
-          reader.skipType(tag & 7);
-          break;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -8233,19 +8999,24 @@ export const ControllerGetCapabilitiesResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ControllerGetCapabilitiesResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseControllerGetCapabilitiesResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.capabilities.push(ControllerServiceCapability.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -8323,26 +9094,33 @@ function createBaseControllerServiceCapability(): ControllerServiceCapability {
 
 export const ControllerServiceCapability = {
   encode(message: ControllerServiceCapability, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.type?.$case === "rpc") {
-      ControllerServiceCapability_RPC.encode(message.type.rpc, writer.uint32(10).fork()).ldelim();
+    switch (message.type?.$case) {
+      case "rpc":
+        ControllerServiceCapability_RPC.encode(message.type.rpc, writer.uint32(10).fork()).ldelim();
+        break;
     }
     return writer;
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ControllerServiceCapability {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseControllerServiceCapability();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.type = { $case: "rpc", rpc: ControllerServiceCapability_RPC.decode(reader, reader.uint32()) };
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -8420,19 +9198,24 @@ export const ControllerServiceCapability_RPC = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ControllerServiceCapability_RPC {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseControllerServiceCapability_RPC();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.type = reader.int32() as any;
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -8516,34 +9299,51 @@ export const CreateSnapshotRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): CreateSnapshotRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCreateSnapshotRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.sourceVolumeId = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.name = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           const entry3 = CreateSnapshotRequest_SecretsEntry.decode(reader, reader.uint32());
           if (entry3.value !== undefined) {
             message.secrets[entry3.key] = entry3.value;
           }
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           const entry4 = CreateSnapshotRequest_ParametersEntry.decode(reader, reader.uint32());
           if (entry4.value !== undefined) {
             message.parameters[entry4.key] = entry4.value;
           }
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -8663,22 +9463,31 @@ export const CreateSnapshotRequest_SecretsEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): CreateSnapshotRequest_SecretsEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCreateSnapshotRequest_SecretsEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -8760,22 +9569,31 @@ export const CreateSnapshotRequest_ParametersEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): CreateSnapshotRequest_ParametersEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCreateSnapshotRequest_ParametersEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -8854,19 +9672,24 @@ export const CreateSnapshotResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): CreateSnapshotResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCreateSnapshotResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.snapshot = Snapshot.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -8929,7 +9752,14 @@ export const CreateSnapshotResponse = {
 };
 
 function createBaseSnapshot(): Snapshot {
-  return { sizeBytes: Long.ZERO, snapshotId: "", sourceVolumeId: "", creationTime: undefined, readyToUse: false };
+  return {
+    sizeBytes: Long.ZERO,
+    snapshotId: "",
+    sourceVolumeId: "",
+    creationTime: undefined,
+    readyToUse: false,
+    groupSnapshotId: "",
+  };
 }
 
 export const Snapshot = {
@@ -8949,35 +9779,66 @@ export const Snapshot = {
     if (message.readyToUse === true) {
       writer.uint32(40).bool(message.readyToUse);
     }
+    if (message.groupSnapshotId !== "") {
+      writer.uint32(50).string(message.groupSnapshotId);
+    }
     return writer;
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): Snapshot {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseSnapshot();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.sizeBytes = reader.int64() as Long;
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.snapshotId = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.sourceVolumeId = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.creationTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 5:
+          if (tag != 40) {
+            break;
+          }
+
           message.readyToUse = reader.bool();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
+        case 6:
+          if (tag != 50) {
+            break;
+          }
+
+          message.groupSnapshotId = reader.string();
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -9021,6 +9882,7 @@ export const Snapshot = {
       sourceVolumeId: isSet(object.sourceVolumeId) ? String(object.sourceVolumeId) : "",
       creationTime: isSet(object.creationTime) ? fromJsonTimestamp(object.creationTime) : undefined,
       readyToUse: isSet(object.readyToUse) ? Boolean(object.readyToUse) : false,
+      groupSnapshotId: isSet(object.groupSnapshotId) ? String(object.groupSnapshotId) : "",
     };
   },
 
@@ -9031,6 +9893,7 @@ export const Snapshot = {
     message.sourceVolumeId !== undefined && (obj.sourceVolumeId = message.sourceVolumeId);
     message.creationTime !== undefined && (obj.creationTime = message.creationTime.toISOString());
     message.readyToUse !== undefined && (obj.readyToUse = message.readyToUse);
+    message.groupSnapshotId !== undefined && (obj.groupSnapshotId = message.groupSnapshotId);
     return obj;
   },
 
@@ -9047,6 +9910,7 @@ export const Snapshot = {
     message.sourceVolumeId = object.sourceVolumeId ?? "";
     message.creationTime = object.creationTime ?? undefined;
     message.readyToUse = object.readyToUse ?? false;
+    message.groupSnapshotId = object.groupSnapshotId ?? "";
     return message;
   },
 };
@@ -9067,25 +9931,34 @@ export const DeleteSnapshotRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): DeleteSnapshotRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDeleteSnapshotRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.snapshotId = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           const entry2 = DeleteSnapshotRequest_SecretsEntry.decode(reader, reader.uint32());
           if (entry2.value !== undefined) {
             message.secrets[entry2.key] = entry2.value;
           }
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -9181,22 +10054,31 @@ export const DeleteSnapshotRequest_SecretsEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): DeleteSnapshotRequest_SecretsEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDeleteSnapshotRequest_SecretsEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -9272,16 +10154,17 @@ export const DeleteSnapshotResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): DeleteSnapshotResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseDeleteSnapshotResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        default:
-          reader.skipType(tag & 7);
-          break;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -9364,34 +10247,55 @@ export const ListSnapshotsRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListSnapshotsRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListSnapshotsRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.maxEntries = reader.int32();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.startingToken = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.sourceVolumeId = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.snapshotId = reader.string();
-          break;
+          continue;
         case 5:
+          if (tag != 42) {
+            break;
+          }
+
           const entry5 = ListSnapshotsRequest_SecretsEntry.decode(reader, reader.uint32());
           if (entry5.value !== undefined) {
             message.secrets[entry5.key] = entry5.value;
           }
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -9496,22 +10400,31 @@ export const ListSnapshotsRequest_SecretsEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListSnapshotsRequest_SecretsEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListSnapshotsRequest_SecretsEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -9593,22 +10506,31 @@ export const ListSnapshotsResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListSnapshotsResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListSnapshotsResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.entries.push(ListSnapshotsResponse_Entry.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.nextToken = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -9692,19 +10614,24 @@ export const ListSnapshotsResponse_Entry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ListSnapshotsResponse_Entry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseListSnapshotsResponse_Entry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.snapshot = Snapshot.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -9788,31 +10715,48 @@ export const ControllerExpandVolumeRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ControllerExpandVolumeRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseControllerExpandVolumeRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.volumeId = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.capacityRange = CapacityRange.decode(reader, reader.uint32());
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           const entry3 = ControllerExpandVolumeRequest_SecretsEntry.decode(reader, reader.uint32());
           if (entry3.value !== undefined) {
             message.secrets[entry3.key] = entry3.value;
           }
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.volumeCapability = VolumeCapability.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -9922,22 +10866,31 @@ export const ControllerExpandVolumeRequest_SecretsEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ControllerExpandVolumeRequest_SecretsEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseControllerExpandVolumeRequest_SecretsEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -10019,22 +10972,31 @@ export const ControllerExpandVolumeResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): ControllerExpandVolumeResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseControllerExpandVolumeResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.capacityBytes = reader.int64() as Long;
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.nodeExpansionRequired = reader.bool();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -10138,43 +11100,68 @@ export const NodeStageVolumeRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): NodeStageVolumeRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNodeStageVolumeRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.volumeId = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           const entry2 = NodeStageVolumeRequest_PublishContextEntry.decode(reader, reader.uint32());
           if (entry2.value !== undefined) {
             message.publishContext[entry2.key] = entry2.value;
           }
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.stagingTargetPath = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.volumeCapability = VolumeCapability.decode(reader, reader.uint32());
-          break;
+          continue;
         case 5:
+          if (tag != 42) {
+            break;
+          }
+
           const entry5 = NodeStageVolumeRequest_SecretsEntry.decode(reader, reader.uint32());
           if (entry5.value !== undefined) {
             message.secrets[entry5.key] = entry5.value;
           }
-          break;
+          continue;
         case 6:
+          if (tag != 50) {
+            break;
+          }
+
           const entry6 = NodeStageVolumeRequest_VolumeContextEntry.decode(reader, reader.uint32());
           if (entry6.value !== undefined) {
             message.volumeContext[entry6.key] = entry6.value;
           }
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -10321,22 +11308,31 @@ export const NodeStageVolumeRequest_PublishContextEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): NodeStageVolumeRequest_PublishContextEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNodeStageVolumeRequest_PublishContextEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -10418,22 +11414,31 @@ export const NodeStageVolumeRequest_SecretsEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): NodeStageVolumeRequest_SecretsEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNodeStageVolumeRequest_SecretsEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -10515,22 +11520,31 @@ export const NodeStageVolumeRequest_VolumeContextEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): NodeStageVolumeRequest_VolumeContextEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNodeStageVolumeRequest_VolumeContextEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -10606,16 +11620,17 @@ export const NodeStageVolumeResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): NodeStageVolumeResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNodeStageVolumeResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        default:
-          reader.skipType(tag & 7);
-          break;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -10689,22 +11704,31 @@ export const NodeUnstageVolumeRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): NodeUnstageVolumeRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNodeUnstageVolumeRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.volumeId = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.stagingTargetPath = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -10779,16 +11803,17 @@ export const NodeUnstageVolumeResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): NodeUnstageVolumeResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNodeUnstageVolumeResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        default:
-          reader.skipType(tag & 7);
-          break;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -10890,49 +11915,82 @@ export const NodePublishVolumeRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): NodePublishVolumeRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNodePublishVolumeRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.volumeId = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           const entry2 = NodePublishVolumeRequest_PublishContextEntry.decode(reader, reader.uint32());
           if (entry2.value !== undefined) {
             message.publishContext[entry2.key] = entry2.value;
           }
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.stagingTargetPath = reader.string();
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.targetPath = reader.string();
-          break;
+          continue;
         case 5:
+          if (tag != 42) {
+            break;
+          }
+
           message.volumeCapability = VolumeCapability.decode(reader, reader.uint32());
-          break;
+          continue;
         case 6:
+          if (tag != 48) {
+            break;
+          }
+
           message.readonly = reader.bool();
-          break;
+          continue;
         case 7:
+          if (tag != 58) {
+            break;
+          }
+
           const entry7 = NodePublishVolumeRequest_SecretsEntry.decode(reader, reader.uint32());
           if (entry7.value !== undefined) {
             message.secrets[entry7.key] = entry7.value;
           }
-          break;
+          continue;
         case 8:
+          if (tag != 66) {
+            break;
+          }
+
           const entry8 = NodePublishVolumeRequest_VolumeContextEntry.decode(reader, reader.uint32());
           if (entry8.value !== undefined) {
             message.volumeContext[entry8.key] = entry8.value;
           }
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -11085,22 +12143,31 @@ export const NodePublishVolumeRequest_PublishContextEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): NodePublishVolumeRequest_PublishContextEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNodePublishVolumeRequest_PublishContextEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -11182,22 +12249,31 @@ export const NodePublishVolumeRequest_SecretsEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): NodePublishVolumeRequest_SecretsEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNodePublishVolumeRequest_SecretsEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -11279,22 +12355,31 @@ export const NodePublishVolumeRequest_VolumeContextEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): NodePublishVolumeRequest_VolumeContextEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNodePublishVolumeRequest_VolumeContextEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -11370,16 +12455,17 @@ export const NodePublishVolumeResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): NodePublishVolumeResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNodePublishVolumeResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        default:
-          reader.skipType(tag & 7);
-          break;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -11453,22 +12539,31 @@ export const NodeUnpublishVolumeRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): NodeUnpublishVolumeRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNodeUnpublishVolumeRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.volumeId = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.targetPath = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -11543,16 +12638,17 @@ export const NodeUnpublishVolumeResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): NodeUnpublishVolumeResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNodeUnpublishVolumeResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        default:
-          reader.skipType(tag & 7);
-          break;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -11629,25 +12725,38 @@ export const NodeGetVolumeStatsRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): NodeGetVolumeStatsRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNodeGetVolumeStatsRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.volumeId = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.volumePath = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.stagingTargetPath = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -11731,22 +12840,31 @@ export const NodeGetVolumeStatsResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): NodeGetVolumeStatsResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNodeGetVolumeStatsResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.usage.push(VolumeUsage.decode(reader, reader.uint32()));
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.volumeCondition = VolumeCondition.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -11840,28 +12958,45 @@ export const VolumeUsage = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): VolumeUsage {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseVolumeUsage();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.available = reader.int64() as Long;
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.total = reader.int64() as Long;
-          break;
+          continue;
         case 3:
+          if (tag != 24) {
+            break;
+          }
+
           message.used = reader.int64() as Long;
-          break;
+          continue;
         case 4:
+          if (tag != 32) {
+            break;
+          }
+
           message.unit = reader.int32() as any;
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -11948,22 +13083,31 @@ export const VolumeCondition = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): VolumeCondition {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseVolumeCondition();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.abnormal = reader.bool();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.message = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -12036,16 +13180,17 @@ export const NodeGetCapabilitiesRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): NodeGetCapabilitiesRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNodeGetCapabilitiesRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        default:
-          reader.skipType(tag & 7);
-          break;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -12116,19 +13261,24 @@ export const NodeGetCapabilitiesResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): NodeGetCapabilitiesResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNodeGetCapabilitiesResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.capabilities.push(NodeServiceCapability.decode(reader, reader.uint32()));
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -12202,26 +13352,33 @@ function createBaseNodeServiceCapability(): NodeServiceCapability {
 
 export const NodeServiceCapability = {
   encode(message: NodeServiceCapability, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.type?.$case === "rpc") {
-      NodeServiceCapability_RPC.encode(message.type.rpc, writer.uint32(10).fork()).ldelim();
+    switch (message.type?.$case) {
+      case "rpc":
+        NodeServiceCapability_RPC.encode(message.type.rpc, writer.uint32(10).fork()).ldelim();
+        break;
     }
     return writer;
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): NodeServiceCapability {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNodeServiceCapability();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.type = { $case: "rpc", rpc: NodeServiceCapability_RPC.decode(reader, reader.uint32()) };
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -12299,19 +13456,24 @@ export const NodeServiceCapability_RPC = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): NodeServiceCapability_RPC {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNodeServiceCapability_RPC();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.type = reader.int32() as any;
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -12381,16 +13543,17 @@ export const NodeGetInfoRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): NodeGetInfoRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNodeGetInfoRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        default:
-          reader.skipType(tag & 7);
-          break;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -12467,25 +13630,38 @@ export const NodeGetInfoResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): NodeGetInfoResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNodeGetInfoResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.nodeId = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 16) {
+            break;
+          }
+
           message.maxVolumesPerNode = reader.int64() as Long;
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.accessibleTopology = Topology.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -12594,37 +13770,62 @@ export const NodeExpandVolumeRequest = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): NodeExpandVolumeRequest {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNodeExpandVolumeRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.volumeId = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.volumePath = reader.string();
-          break;
+          continue;
         case 3:
+          if (tag != 26) {
+            break;
+          }
+
           message.capacityRange = CapacityRange.decode(reader, reader.uint32());
-          break;
+          continue;
         case 4:
+          if (tag != 34) {
+            break;
+          }
+
           message.stagingTargetPath = reader.string();
-          break;
+          continue;
         case 5:
+          if (tag != 42) {
+            break;
+          }
+
           message.volumeCapability = VolumeCapability.decode(reader, reader.uint32());
-          break;
+          continue;
         case 6:
+          if (tag != 50) {
+            break;
+          }
+
           const entry6 = NodeExpandVolumeRequest_SecretsEntry.decode(reader, reader.uint32());
           if (entry6.value !== undefined) {
             message.secrets[entry6.key] = entry6.value;
           }
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -12738,22 +13939,31 @@ export const NodeExpandVolumeRequest_SecretsEntry = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): NodeExpandVolumeRequest_SecretsEntry {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNodeExpandVolumeRequest_SecretsEntry();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 10) {
+            break;
+          }
+
           message.key = reader.string();
-          break;
+          continue;
         case 2:
+          if (tag != 18) {
+            break;
+          }
+
           message.value = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -12832,19 +14042,24 @@ export const NodeExpandVolumeResponse = {
   },
 
   decode(input: _m0.Reader | Uint8Array, length?: number): NodeExpandVolumeResponse {
-    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseNodeExpandVolumeResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          if (tag != 8) {
+            break;
+          }
+
           message.capacityBytes = reader.int64() as Long;
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
+          continue;
       }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
     }
     return message;
   },
@@ -12906,10 +14121,1703 @@ export const NodeExpandVolumeResponse = {
   },
 };
 
+function createBaseGroupControllerGetCapabilitiesRequest(): GroupControllerGetCapabilitiesRequest {
+  return {};
+}
+
+export const GroupControllerGetCapabilitiesRequest = {
+  encode(_: GroupControllerGetCapabilitiesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GroupControllerGetCapabilitiesRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGroupControllerGetCapabilitiesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  // encodeTransform encodes a source of message objects.
+  // Transform<GroupControllerGetCapabilitiesRequest, Uint8Array>
+  async *encodeTransform(
+    source:
+      | AsyncIterable<GroupControllerGetCapabilitiesRequest | GroupControllerGetCapabilitiesRequest[]>
+      | Iterable<GroupControllerGetCapabilitiesRequest | GroupControllerGetCapabilitiesRequest[]>,
+  ): AsyncIterable<Uint8Array> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [GroupControllerGetCapabilitiesRequest.encode(p).finish()];
+        }
+      } else {
+        yield* [GroupControllerGetCapabilitiesRequest.encode(pkt).finish()];
+      }
+    }
+  },
+
+  // decodeTransform decodes a source of encoded messages.
+  // Transform<Uint8Array, GroupControllerGetCapabilitiesRequest>
+  async *decodeTransform(
+    source: AsyncIterable<Uint8Array | Uint8Array[]> | Iterable<Uint8Array | Uint8Array[]>,
+  ): AsyncIterable<GroupControllerGetCapabilitiesRequest> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [GroupControllerGetCapabilitiesRequest.decode(p)];
+        }
+      } else {
+        yield* [GroupControllerGetCapabilitiesRequest.decode(pkt)];
+      }
+    }
+  },
+
+  fromJSON(_: any): GroupControllerGetCapabilitiesRequest {
+    return {};
+  },
+
+  toJSON(_: GroupControllerGetCapabilitiesRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GroupControllerGetCapabilitiesRequest>, I>>(
+    base?: I,
+  ): GroupControllerGetCapabilitiesRequest {
+    return GroupControllerGetCapabilitiesRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<GroupControllerGetCapabilitiesRequest>, I>>(
+    _: I,
+  ): GroupControllerGetCapabilitiesRequest {
+    const message = createBaseGroupControllerGetCapabilitiesRequest();
+    return message;
+  },
+};
+
+function createBaseGroupControllerGetCapabilitiesResponse(): GroupControllerGetCapabilitiesResponse {
+  return { capabilities: [] };
+}
+
+export const GroupControllerGetCapabilitiesResponse = {
+  encode(message: GroupControllerGetCapabilitiesResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.capabilities) {
+      GroupControllerServiceCapability.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GroupControllerGetCapabilitiesResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGroupControllerGetCapabilitiesResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.capabilities.push(GroupControllerServiceCapability.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  // encodeTransform encodes a source of message objects.
+  // Transform<GroupControllerGetCapabilitiesResponse, Uint8Array>
+  async *encodeTransform(
+    source:
+      | AsyncIterable<GroupControllerGetCapabilitiesResponse | GroupControllerGetCapabilitiesResponse[]>
+      | Iterable<GroupControllerGetCapabilitiesResponse | GroupControllerGetCapabilitiesResponse[]>,
+  ): AsyncIterable<Uint8Array> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [GroupControllerGetCapabilitiesResponse.encode(p).finish()];
+        }
+      } else {
+        yield* [GroupControllerGetCapabilitiesResponse.encode(pkt).finish()];
+      }
+    }
+  },
+
+  // decodeTransform decodes a source of encoded messages.
+  // Transform<Uint8Array, GroupControllerGetCapabilitiesResponse>
+  async *decodeTransform(
+    source: AsyncIterable<Uint8Array | Uint8Array[]> | Iterable<Uint8Array | Uint8Array[]>,
+  ): AsyncIterable<GroupControllerGetCapabilitiesResponse> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [GroupControllerGetCapabilitiesResponse.decode(p)];
+        }
+      } else {
+        yield* [GroupControllerGetCapabilitiesResponse.decode(pkt)];
+      }
+    }
+  },
+
+  fromJSON(object: any): GroupControllerGetCapabilitiesResponse {
+    return {
+      capabilities: Array.isArray(object?.capabilities)
+        ? object.capabilities.map((e: any) => GroupControllerServiceCapability.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: GroupControllerGetCapabilitiesResponse): unknown {
+    const obj: any = {};
+    if (message.capabilities) {
+      obj.capabilities = message.capabilities.map((e) => e ? GroupControllerServiceCapability.toJSON(e) : undefined);
+    } else {
+      obj.capabilities = [];
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GroupControllerGetCapabilitiesResponse>, I>>(
+    base?: I,
+  ): GroupControllerGetCapabilitiesResponse {
+    return GroupControllerGetCapabilitiesResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<GroupControllerGetCapabilitiesResponse>, I>>(
+    object: I,
+  ): GroupControllerGetCapabilitiesResponse {
+    const message = createBaseGroupControllerGetCapabilitiesResponse();
+    message.capabilities = object.capabilities?.map((e) => GroupControllerServiceCapability.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseGroupControllerServiceCapability(): GroupControllerServiceCapability {
+  return { type: undefined };
+}
+
+export const GroupControllerServiceCapability = {
+  encode(message: GroupControllerServiceCapability, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    switch (message.type?.$case) {
+      case "rpc":
+        GroupControllerServiceCapability_RPC.encode(message.type.rpc, writer.uint32(10).fork()).ldelim();
+        break;
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GroupControllerServiceCapability {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGroupControllerServiceCapability();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.type = { $case: "rpc", rpc: GroupControllerServiceCapability_RPC.decode(reader, reader.uint32()) };
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  // encodeTransform encodes a source of message objects.
+  // Transform<GroupControllerServiceCapability, Uint8Array>
+  async *encodeTransform(
+    source:
+      | AsyncIterable<GroupControllerServiceCapability | GroupControllerServiceCapability[]>
+      | Iterable<GroupControllerServiceCapability | GroupControllerServiceCapability[]>,
+  ): AsyncIterable<Uint8Array> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [GroupControllerServiceCapability.encode(p).finish()];
+        }
+      } else {
+        yield* [GroupControllerServiceCapability.encode(pkt).finish()];
+      }
+    }
+  },
+
+  // decodeTransform decodes a source of encoded messages.
+  // Transform<Uint8Array, GroupControllerServiceCapability>
+  async *decodeTransform(
+    source: AsyncIterable<Uint8Array | Uint8Array[]> | Iterable<Uint8Array | Uint8Array[]>,
+  ): AsyncIterable<GroupControllerServiceCapability> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [GroupControllerServiceCapability.decode(p)];
+        }
+      } else {
+        yield* [GroupControllerServiceCapability.decode(pkt)];
+      }
+    }
+  },
+
+  fromJSON(object: any): GroupControllerServiceCapability {
+    return {
+      type: isSet(object.rpc)
+        ? { $case: "rpc", rpc: GroupControllerServiceCapability_RPC.fromJSON(object.rpc) }
+        : undefined,
+    };
+  },
+
+  toJSON(message: GroupControllerServiceCapability): unknown {
+    const obj: any = {};
+    message.type?.$case === "rpc" &&
+      (obj.rpc = message.type?.rpc ? GroupControllerServiceCapability_RPC.toJSON(message.type?.rpc) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GroupControllerServiceCapability>, I>>(
+    base?: I,
+  ): GroupControllerServiceCapability {
+    return GroupControllerServiceCapability.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<GroupControllerServiceCapability>, I>>(
+    object: I,
+  ): GroupControllerServiceCapability {
+    const message = createBaseGroupControllerServiceCapability();
+    if (object.type?.$case === "rpc" && object.type?.rpc !== undefined && object.type?.rpc !== null) {
+      message.type = { $case: "rpc", rpc: GroupControllerServiceCapability_RPC.fromPartial(object.type.rpc) };
+    }
+    return message;
+  },
+};
+
+function createBaseGroupControllerServiceCapability_RPC(): GroupControllerServiceCapability_RPC {
+  return { type: 0 };
+}
+
+export const GroupControllerServiceCapability_RPC = {
+  encode(message: GroupControllerServiceCapability_RPC, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.type !== 0) {
+      writer.uint32(8).int32(message.type);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GroupControllerServiceCapability_RPC {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGroupControllerServiceCapability_RPC();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 8) {
+            break;
+          }
+
+          message.type = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  // encodeTransform encodes a source of message objects.
+  // Transform<GroupControllerServiceCapability_RPC, Uint8Array>
+  async *encodeTransform(
+    source:
+      | AsyncIterable<GroupControllerServiceCapability_RPC | GroupControllerServiceCapability_RPC[]>
+      | Iterable<GroupControllerServiceCapability_RPC | GroupControllerServiceCapability_RPC[]>,
+  ): AsyncIterable<Uint8Array> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [GroupControllerServiceCapability_RPC.encode(p).finish()];
+        }
+      } else {
+        yield* [GroupControllerServiceCapability_RPC.encode(pkt).finish()];
+      }
+    }
+  },
+
+  // decodeTransform decodes a source of encoded messages.
+  // Transform<Uint8Array, GroupControllerServiceCapability_RPC>
+  async *decodeTransform(
+    source: AsyncIterable<Uint8Array | Uint8Array[]> | Iterable<Uint8Array | Uint8Array[]>,
+  ): AsyncIterable<GroupControllerServiceCapability_RPC> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [GroupControllerServiceCapability_RPC.decode(p)];
+        }
+      } else {
+        yield* [GroupControllerServiceCapability_RPC.decode(pkt)];
+      }
+    }
+  },
+
+  fromJSON(object: any): GroupControllerServiceCapability_RPC {
+    return { type: isSet(object.type) ? groupControllerServiceCapability_RPC_TypeFromJSON(object.type) : 0 };
+  },
+
+  toJSON(message: GroupControllerServiceCapability_RPC): unknown {
+    const obj: any = {};
+    message.type !== undefined && (obj.type = groupControllerServiceCapability_RPC_TypeToJSON(message.type));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GroupControllerServiceCapability_RPC>, I>>(
+    base?: I,
+  ): GroupControllerServiceCapability_RPC {
+    return GroupControllerServiceCapability_RPC.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<GroupControllerServiceCapability_RPC>, I>>(
+    object: I,
+  ): GroupControllerServiceCapability_RPC {
+    const message = createBaseGroupControllerServiceCapability_RPC();
+    message.type = object.type ?? 0;
+    return message;
+  },
+};
+
+function createBaseCreateVolumeGroupSnapshotRequest(): CreateVolumeGroupSnapshotRequest {
+  return { name: "", sourceVolumeIds: [], secrets: {}, parameters: {} };
+}
+
+export const CreateVolumeGroupSnapshotRequest = {
+  encode(message: CreateVolumeGroupSnapshotRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    for (const v of message.sourceVolumeIds) {
+      writer.uint32(18).string(v!);
+    }
+    Object.entries(message.secrets).forEach(([key, value]) => {
+      CreateVolumeGroupSnapshotRequest_SecretsEntry.encode({ key: key as any, value }, writer.uint32(26).fork())
+        .ldelim();
+    });
+    Object.entries(message.parameters).forEach(([key, value]) => {
+      CreateVolumeGroupSnapshotRequest_ParametersEntry.encode({ key: key as any, value }, writer.uint32(34).fork())
+        .ldelim();
+    });
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CreateVolumeGroupSnapshotRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateVolumeGroupSnapshotRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.sourceVolumeIds.push(reader.string());
+          continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
+          const entry3 = CreateVolumeGroupSnapshotRequest_SecretsEntry.decode(reader, reader.uint32());
+          if (entry3.value !== undefined) {
+            message.secrets[entry3.key] = entry3.value;
+          }
+          continue;
+        case 4:
+          if (tag != 34) {
+            break;
+          }
+
+          const entry4 = CreateVolumeGroupSnapshotRequest_ParametersEntry.decode(reader, reader.uint32());
+          if (entry4.value !== undefined) {
+            message.parameters[entry4.key] = entry4.value;
+          }
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  // encodeTransform encodes a source of message objects.
+  // Transform<CreateVolumeGroupSnapshotRequest, Uint8Array>
+  async *encodeTransform(
+    source:
+      | AsyncIterable<CreateVolumeGroupSnapshotRequest | CreateVolumeGroupSnapshotRequest[]>
+      | Iterable<CreateVolumeGroupSnapshotRequest | CreateVolumeGroupSnapshotRequest[]>,
+  ): AsyncIterable<Uint8Array> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [CreateVolumeGroupSnapshotRequest.encode(p).finish()];
+        }
+      } else {
+        yield* [CreateVolumeGroupSnapshotRequest.encode(pkt).finish()];
+      }
+    }
+  },
+
+  // decodeTransform decodes a source of encoded messages.
+  // Transform<Uint8Array, CreateVolumeGroupSnapshotRequest>
+  async *decodeTransform(
+    source: AsyncIterable<Uint8Array | Uint8Array[]> | Iterable<Uint8Array | Uint8Array[]>,
+  ): AsyncIterable<CreateVolumeGroupSnapshotRequest> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [CreateVolumeGroupSnapshotRequest.decode(p)];
+        }
+      } else {
+        yield* [CreateVolumeGroupSnapshotRequest.decode(pkt)];
+      }
+    }
+  },
+
+  fromJSON(object: any): CreateVolumeGroupSnapshotRequest {
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      sourceVolumeIds: Array.isArray(object?.sourceVolumeIds) ? object.sourceVolumeIds.map((e: any) => String(e)) : [],
+      secrets: isObject(object.secrets)
+        ? Object.entries(object.secrets).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
+      parameters: isObject(object.parameters)
+        ? Object.entries(object.parameters).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
+    };
+  },
+
+  toJSON(message: CreateVolumeGroupSnapshotRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    if (message.sourceVolumeIds) {
+      obj.sourceVolumeIds = message.sourceVolumeIds.map((e) => e);
+    } else {
+      obj.sourceVolumeIds = [];
+    }
+    obj.secrets = {};
+    if (message.secrets) {
+      Object.entries(message.secrets).forEach(([k, v]) => {
+        obj.secrets[k] = v;
+      });
+    }
+    obj.parameters = {};
+    if (message.parameters) {
+      Object.entries(message.parameters).forEach(([k, v]) => {
+        obj.parameters[k] = v;
+      });
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CreateVolumeGroupSnapshotRequest>, I>>(
+    base?: I,
+  ): CreateVolumeGroupSnapshotRequest {
+    return CreateVolumeGroupSnapshotRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<CreateVolumeGroupSnapshotRequest>, I>>(
+    object: I,
+  ): CreateVolumeGroupSnapshotRequest {
+    const message = createBaseCreateVolumeGroupSnapshotRequest();
+    message.name = object.name ?? "";
+    message.sourceVolumeIds = object.sourceVolumeIds?.map((e) => e) || [];
+    message.secrets = Object.entries(object.secrets ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = String(value);
+      }
+      return acc;
+    }, {});
+    message.parameters = Object.entries(object.parameters ?? {}).reduce<{ [key: string]: string }>(
+      (acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = String(value);
+        }
+        return acc;
+      },
+      {},
+    );
+    return message;
+  },
+};
+
+function createBaseCreateVolumeGroupSnapshotRequest_SecretsEntry(): CreateVolumeGroupSnapshotRequest_SecretsEntry {
+  return { key: "", value: "" };
+}
+
+export const CreateVolumeGroupSnapshotRequest_SecretsEntry = {
+  encode(message: CreateVolumeGroupSnapshotRequest_SecretsEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CreateVolumeGroupSnapshotRequest_SecretsEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateVolumeGroupSnapshotRequest_SecretsEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  // encodeTransform encodes a source of message objects.
+  // Transform<CreateVolumeGroupSnapshotRequest_SecretsEntry, Uint8Array>
+  async *encodeTransform(
+    source:
+      | AsyncIterable<CreateVolumeGroupSnapshotRequest_SecretsEntry | CreateVolumeGroupSnapshotRequest_SecretsEntry[]>
+      | Iterable<CreateVolumeGroupSnapshotRequest_SecretsEntry | CreateVolumeGroupSnapshotRequest_SecretsEntry[]>,
+  ): AsyncIterable<Uint8Array> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [CreateVolumeGroupSnapshotRequest_SecretsEntry.encode(p).finish()];
+        }
+      } else {
+        yield* [CreateVolumeGroupSnapshotRequest_SecretsEntry.encode(pkt).finish()];
+      }
+    }
+  },
+
+  // decodeTransform decodes a source of encoded messages.
+  // Transform<Uint8Array, CreateVolumeGroupSnapshotRequest_SecretsEntry>
+  async *decodeTransform(
+    source: AsyncIterable<Uint8Array | Uint8Array[]> | Iterable<Uint8Array | Uint8Array[]>,
+  ): AsyncIterable<CreateVolumeGroupSnapshotRequest_SecretsEntry> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [CreateVolumeGroupSnapshotRequest_SecretsEntry.decode(p)];
+        }
+      } else {
+        yield* [CreateVolumeGroupSnapshotRequest_SecretsEntry.decode(pkt)];
+      }
+    }
+  },
+
+  fromJSON(object: any): CreateVolumeGroupSnapshotRequest_SecretsEntry {
+    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
+  },
+
+  toJSON(message: CreateVolumeGroupSnapshotRequest_SecretsEntry): unknown {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CreateVolumeGroupSnapshotRequest_SecretsEntry>, I>>(
+    base?: I,
+  ): CreateVolumeGroupSnapshotRequest_SecretsEntry {
+    return CreateVolumeGroupSnapshotRequest_SecretsEntry.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<CreateVolumeGroupSnapshotRequest_SecretsEntry>, I>>(
+    object: I,
+  ): CreateVolumeGroupSnapshotRequest_SecretsEntry {
+    const message = createBaseCreateVolumeGroupSnapshotRequest_SecretsEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBaseCreateVolumeGroupSnapshotRequest_ParametersEntry(): CreateVolumeGroupSnapshotRequest_ParametersEntry {
+  return { key: "", value: "" };
+}
+
+export const CreateVolumeGroupSnapshotRequest_ParametersEntry = {
+  encode(
+    message: CreateVolumeGroupSnapshotRequest_ParametersEntry,
+    writer: _m0.Writer = _m0.Writer.create(),
+  ): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CreateVolumeGroupSnapshotRequest_ParametersEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateVolumeGroupSnapshotRequest_ParametersEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  // encodeTransform encodes a source of message objects.
+  // Transform<CreateVolumeGroupSnapshotRequest_ParametersEntry, Uint8Array>
+  async *encodeTransform(
+    source:
+      | AsyncIterable<
+        CreateVolumeGroupSnapshotRequest_ParametersEntry | CreateVolumeGroupSnapshotRequest_ParametersEntry[]
+      >
+      | Iterable<CreateVolumeGroupSnapshotRequest_ParametersEntry | CreateVolumeGroupSnapshotRequest_ParametersEntry[]>,
+  ): AsyncIterable<Uint8Array> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [CreateVolumeGroupSnapshotRequest_ParametersEntry.encode(p).finish()];
+        }
+      } else {
+        yield* [CreateVolumeGroupSnapshotRequest_ParametersEntry.encode(pkt).finish()];
+      }
+    }
+  },
+
+  // decodeTransform decodes a source of encoded messages.
+  // Transform<Uint8Array, CreateVolumeGroupSnapshotRequest_ParametersEntry>
+  async *decodeTransform(
+    source: AsyncIterable<Uint8Array | Uint8Array[]> | Iterable<Uint8Array | Uint8Array[]>,
+  ): AsyncIterable<CreateVolumeGroupSnapshotRequest_ParametersEntry> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [CreateVolumeGroupSnapshotRequest_ParametersEntry.decode(p)];
+        }
+      } else {
+        yield* [CreateVolumeGroupSnapshotRequest_ParametersEntry.decode(pkt)];
+      }
+    }
+  },
+
+  fromJSON(object: any): CreateVolumeGroupSnapshotRequest_ParametersEntry {
+    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
+  },
+
+  toJSON(message: CreateVolumeGroupSnapshotRequest_ParametersEntry): unknown {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CreateVolumeGroupSnapshotRequest_ParametersEntry>, I>>(
+    base?: I,
+  ): CreateVolumeGroupSnapshotRequest_ParametersEntry {
+    return CreateVolumeGroupSnapshotRequest_ParametersEntry.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<CreateVolumeGroupSnapshotRequest_ParametersEntry>, I>>(
+    object: I,
+  ): CreateVolumeGroupSnapshotRequest_ParametersEntry {
+    const message = createBaseCreateVolumeGroupSnapshotRequest_ParametersEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBaseCreateVolumeGroupSnapshotResponse(): CreateVolumeGroupSnapshotResponse {
+  return { groupSnapshot: undefined };
+}
+
+export const CreateVolumeGroupSnapshotResponse = {
+  encode(message: CreateVolumeGroupSnapshotResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.groupSnapshot !== undefined) {
+      VolumeGroupSnapshot.encode(message.groupSnapshot, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CreateVolumeGroupSnapshotResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateVolumeGroupSnapshotResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.groupSnapshot = VolumeGroupSnapshot.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  // encodeTransform encodes a source of message objects.
+  // Transform<CreateVolumeGroupSnapshotResponse, Uint8Array>
+  async *encodeTransform(
+    source:
+      | AsyncIterable<CreateVolumeGroupSnapshotResponse | CreateVolumeGroupSnapshotResponse[]>
+      | Iterable<CreateVolumeGroupSnapshotResponse | CreateVolumeGroupSnapshotResponse[]>,
+  ): AsyncIterable<Uint8Array> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [CreateVolumeGroupSnapshotResponse.encode(p).finish()];
+        }
+      } else {
+        yield* [CreateVolumeGroupSnapshotResponse.encode(pkt).finish()];
+      }
+    }
+  },
+
+  // decodeTransform decodes a source of encoded messages.
+  // Transform<Uint8Array, CreateVolumeGroupSnapshotResponse>
+  async *decodeTransform(
+    source: AsyncIterable<Uint8Array | Uint8Array[]> | Iterable<Uint8Array | Uint8Array[]>,
+  ): AsyncIterable<CreateVolumeGroupSnapshotResponse> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [CreateVolumeGroupSnapshotResponse.decode(p)];
+        }
+      } else {
+        yield* [CreateVolumeGroupSnapshotResponse.decode(pkt)];
+      }
+    }
+  },
+
+  fromJSON(object: any): CreateVolumeGroupSnapshotResponse {
+    return {
+      groupSnapshot: isSet(object.groupSnapshot) ? VolumeGroupSnapshot.fromJSON(object.groupSnapshot) : undefined,
+    };
+  },
+
+  toJSON(message: CreateVolumeGroupSnapshotResponse): unknown {
+    const obj: any = {};
+    message.groupSnapshot !== undefined &&
+      (obj.groupSnapshot = message.groupSnapshot ? VolumeGroupSnapshot.toJSON(message.groupSnapshot) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CreateVolumeGroupSnapshotResponse>, I>>(
+    base?: I,
+  ): CreateVolumeGroupSnapshotResponse {
+    return CreateVolumeGroupSnapshotResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<CreateVolumeGroupSnapshotResponse>, I>>(
+    object: I,
+  ): CreateVolumeGroupSnapshotResponse {
+    const message = createBaseCreateVolumeGroupSnapshotResponse();
+    message.groupSnapshot = (object.groupSnapshot !== undefined && object.groupSnapshot !== null)
+      ? VolumeGroupSnapshot.fromPartial(object.groupSnapshot)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseVolumeGroupSnapshot(): VolumeGroupSnapshot {
+  return { groupSnapshotId: "", snapshots: [], creationTime: undefined, readyToUse: false };
+}
+
+export const VolumeGroupSnapshot = {
+  encode(message: VolumeGroupSnapshot, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.groupSnapshotId !== "") {
+      writer.uint32(10).string(message.groupSnapshotId);
+    }
+    for (const v of message.snapshots) {
+      Snapshot.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.creationTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.creationTime), writer.uint32(26).fork()).ldelim();
+    }
+    if (message.readyToUse === true) {
+      writer.uint32(32).bool(message.readyToUse);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): VolumeGroupSnapshot {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseVolumeGroupSnapshot();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.groupSnapshotId = reader.string();
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.snapshots.push(Snapshot.decode(reader, reader.uint32()));
+          continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
+          message.creationTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 4:
+          if (tag != 32) {
+            break;
+          }
+
+          message.readyToUse = reader.bool();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  // encodeTransform encodes a source of message objects.
+  // Transform<VolumeGroupSnapshot, Uint8Array>
+  async *encodeTransform(
+    source:
+      | AsyncIterable<VolumeGroupSnapshot | VolumeGroupSnapshot[]>
+      | Iterable<VolumeGroupSnapshot | VolumeGroupSnapshot[]>,
+  ): AsyncIterable<Uint8Array> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [VolumeGroupSnapshot.encode(p).finish()];
+        }
+      } else {
+        yield* [VolumeGroupSnapshot.encode(pkt).finish()];
+      }
+    }
+  },
+
+  // decodeTransform decodes a source of encoded messages.
+  // Transform<Uint8Array, VolumeGroupSnapshot>
+  async *decodeTransform(
+    source: AsyncIterable<Uint8Array | Uint8Array[]> | Iterable<Uint8Array | Uint8Array[]>,
+  ): AsyncIterable<VolumeGroupSnapshot> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [VolumeGroupSnapshot.decode(p)];
+        }
+      } else {
+        yield* [VolumeGroupSnapshot.decode(pkt)];
+      }
+    }
+  },
+
+  fromJSON(object: any): VolumeGroupSnapshot {
+    return {
+      groupSnapshotId: isSet(object.groupSnapshotId) ? String(object.groupSnapshotId) : "",
+      snapshots: Array.isArray(object?.snapshots) ? object.snapshots.map((e: any) => Snapshot.fromJSON(e)) : [],
+      creationTime: isSet(object.creationTime) ? fromJsonTimestamp(object.creationTime) : undefined,
+      readyToUse: isSet(object.readyToUse) ? Boolean(object.readyToUse) : false,
+    };
+  },
+
+  toJSON(message: VolumeGroupSnapshot): unknown {
+    const obj: any = {};
+    message.groupSnapshotId !== undefined && (obj.groupSnapshotId = message.groupSnapshotId);
+    if (message.snapshots) {
+      obj.snapshots = message.snapshots.map((e) => e ? Snapshot.toJSON(e) : undefined);
+    } else {
+      obj.snapshots = [];
+    }
+    message.creationTime !== undefined && (obj.creationTime = message.creationTime.toISOString());
+    message.readyToUse !== undefined && (obj.readyToUse = message.readyToUse);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<VolumeGroupSnapshot>, I>>(base?: I): VolumeGroupSnapshot {
+    return VolumeGroupSnapshot.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<VolumeGroupSnapshot>, I>>(object: I): VolumeGroupSnapshot {
+    const message = createBaseVolumeGroupSnapshot();
+    message.groupSnapshotId = object.groupSnapshotId ?? "";
+    message.snapshots = object.snapshots?.map((e) => Snapshot.fromPartial(e)) || [];
+    message.creationTime = object.creationTime ?? undefined;
+    message.readyToUse = object.readyToUse ?? false;
+    return message;
+  },
+};
+
+function createBaseDeleteVolumeGroupSnapshotRequest(): DeleteVolumeGroupSnapshotRequest {
+  return { groupSnapshotId: "", snapshotIds: [], secrets: {} };
+}
+
+export const DeleteVolumeGroupSnapshotRequest = {
+  encode(message: DeleteVolumeGroupSnapshotRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.groupSnapshotId !== "") {
+      writer.uint32(10).string(message.groupSnapshotId);
+    }
+    for (const v of message.snapshotIds) {
+      writer.uint32(18).string(v!);
+    }
+    Object.entries(message.secrets).forEach(([key, value]) => {
+      DeleteVolumeGroupSnapshotRequest_SecretsEntry.encode({ key: key as any, value }, writer.uint32(26).fork())
+        .ldelim();
+    });
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DeleteVolumeGroupSnapshotRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteVolumeGroupSnapshotRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.groupSnapshotId = reader.string();
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.snapshotIds.push(reader.string());
+          continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
+          const entry3 = DeleteVolumeGroupSnapshotRequest_SecretsEntry.decode(reader, reader.uint32());
+          if (entry3.value !== undefined) {
+            message.secrets[entry3.key] = entry3.value;
+          }
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  // encodeTransform encodes a source of message objects.
+  // Transform<DeleteVolumeGroupSnapshotRequest, Uint8Array>
+  async *encodeTransform(
+    source:
+      | AsyncIterable<DeleteVolumeGroupSnapshotRequest | DeleteVolumeGroupSnapshotRequest[]>
+      | Iterable<DeleteVolumeGroupSnapshotRequest | DeleteVolumeGroupSnapshotRequest[]>,
+  ): AsyncIterable<Uint8Array> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [DeleteVolumeGroupSnapshotRequest.encode(p).finish()];
+        }
+      } else {
+        yield* [DeleteVolumeGroupSnapshotRequest.encode(pkt).finish()];
+      }
+    }
+  },
+
+  // decodeTransform decodes a source of encoded messages.
+  // Transform<Uint8Array, DeleteVolumeGroupSnapshotRequest>
+  async *decodeTransform(
+    source: AsyncIterable<Uint8Array | Uint8Array[]> | Iterable<Uint8Array | Uint8Array[]>,
+  ): AsyncIterable<DeleteVolumeGroupSnapshotRequest> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [DeleteVolumeGroupSnapshotRequest.decode(p)];
+        }
+      } else {
+        yield* [DeleteVolumeGroupSnapshotRequest.decode(pkt)];
+      }
+    }
+  },
+
+  fromJSON(object: any): DeleteVolumeGroupSnapshotRequest {
+    return {
+      groupSnapshotId: isSet(object.groupSnapshotId) ? String(object.groupSnapshotId) : "",
+      snapshotIds: Array.isArray(object?.snapshotIds) ? object.snapshotIds.map((e: any) => String(e)) : [],
+      secrets: isObject(object.secrets)
+        ? Object.entries(object.secrets).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
+    };
+  },
+
+  toJSON(message: DeleteVolumeGroupSnapshotRequest): unknown {
+    const obj: any = {};
+    message.groupSnapshotId !== undefined && (obj.groupSnapshotId = message.groupSnapshotId);
+    if (message.snapshotIds) {
+      obj.snapshotIds = message.snapshotIds.map((e) => e);
+    } else {
+      obj.snapshotIds = [];
+    }
+    obj.secrets = {};
+    if (message.secrets) {
+      Object.entries(message.secrets).forEach(([k, v]) => {
+        obj.secrets[k] = v;
+      });
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DeleteVolumeGroupSnapshotRequest>, I>>(
+    base?: I,
+  ): DeleteVolumeGroupSnapshotRequest {
+    return DeleteVolumeGroupSnapshotRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<DeleteVolumeGroupSnapshotRequest>, I>>(
+    object: I,
+  ): DeleteVolumeGroupSnapshotRequest {
+    const message = createBaseDeleteVolumeGroupSnapshotRequest();
+    message.groupSnapshotId = object.groupSnapshotId ?? "";
+    message.snapshotIds = object.snapshotIds?.map((e) => e) || [];
+    message.secrets = Object.entries(object.secrets ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = String(value);
+      }
+      return acc;
+    }, {});
+    return message;
+  },
+};
+
+function createBaseDeleteVolumeGroupSnapshotRequest_SecretsEntry(): DeleteVolumeGroupSnapshotRequest_SecretsEntry {
+  return { key: "", value: "" };
+}
+
+export const DeleteVolumeGroupSnapshotRequest_SecretsEntry = {
+  encode(message: DeleteVolumeGroupSnapshotRequest_SecretsEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DeleteVolumeGroupSnapshotRequest_SecretsEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteVolumeGroupSnapshotRequest_SecretsEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  // encodeTransform encodes a source of message objects.
+  // Transform<DeleteVolumeGroupSnapshotRequest_SecretsEntry, Uint8Array>
+  async *encodeTransform(
+    source:
+      | AsyncIterable<DeleteVolumeGroupSnapshotRequest_SecretsEntry | DeleteVolumeGroupSnapshotRequest_SecretsEntry[]>
+      | Iterable<DeleteVolumeGroupSnapshotRequest_SecretsEntry | DeleteVolumeGroupSnapshotRequest_SecretsEntry[]>,
+  ): AsyncIterable<Uint8Array> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [DeleteVolumeGroupSnapshotRequest_SecretsEntry.encode(p).finish()];
+        }
+      } else {
+        yield* [DeleteVolumeGroupSnapshotRequest_SecretsEntry.encode(pkt).finish()];
+      }
+    }
+  },
+
+  // decodeTransform decodes a source of encoded messages.
+  // Transform<Uint8Array, DeleteVolumeGroupSnapshotRequest_SecretsEntry>
+  async *decodeTransform(
+    source: AsyncIterable<Uint8Array | Uint8Array[]> | Iterable<Uint8Array | Uint8Array[]>,
+  ): AsyncIterable<DeleteVolumeGroupSnapshotRequest_SecretsEntry> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [DeleteVolumeGroupSnapshotRequest_SecretsEntry.decode(p)];
+        }
+      } else {
+        yield* [DeleteVolumeGroupSnapshotRequest_SecretsEntry.decode(pkt)];
+      }
+    }
+  },
+
+  fromJSON(object: any): DeleteVolumeGroupSnapshotRequest_SecretsEntry {
+    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
+  },
+
+  toJSON(message: DeleteVolumeGroupSnapshotRequest_SecretsEntry): unknown {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DeleteVolumeGroupSnapshotRequest_SecretsEntry>, I>>(
+    base?: I,
+  ): DeleteVolumeGroupSnapshotRequest_SecretsEntry {
+    return DeleteVolumeGroupSnapshotRequest_SecretsEntry.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<DeleteVolumeGroupSnapshotRequest_SecretsEntry>, I>>(
+    object: I,
+  ): DeleteVolumeGroupSnapshotRequest_SecretsEntry {
+    const message = createBaseDeleteVolumeGroupSnapshotRequest_SecretsEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBaseDeleteVolumeGroupSnapshotResponse(): DeleteVolumeGroupSnapshotResponse {
+  return {};
+}
+
+export const DeleteVolumeGroupSnapshotResponse = {
+  encode(_: DeleteVolumeGroupSnapshotResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DeleteVolumeGroupSnapshotResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteVolumeGroupSnapshotResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  // encodeTransform encodes a source of message objects.
+  // Transform<DeleteVolumeGroupSnapshotResponse, Uint8Array>
+  async *encodeTransform(
+    source:
+      | AsyncIterable<DeleteVolumeGroupSnapshotResponse | DeleteVolumeGroupSnapshotResponse[]>
+      | Iterable<DeleteVolumeGroupSnapshotResponse | DeleteVolumeGroupSnapshotResponse[]>,
+  ): AsyncIterable<Uint8Array> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [DeleteVolumeGroupSnapshotResponse.encode(p).finish()];
+        }
+      } else {
+        yield* [DeleteVolumeGroupSnapshotResponse.encode(pkt).finish()];
+      }
+    }
+  },
+
+  // decodeTransform decodes a source of encoded messages.
+  // Transform<Uint8Array, DeleteVolumeGroupSnapshotResponse>
+  async *decodeTransform(
+    source: AsyncIterable<Uint8Array | Uint8Array[]> | Iterable<Uint8Array | Uint8Array[]>,
+  ): AsyncIterable<DeleteVolumeGroupSnapshotResponse> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [DeleteVolumeGroupSnapshotResponse.decode(p)];
+        }
+      } else {
+        yield* [DeleteVolumeGroupSnapshotResponse.decode(pkt)];
+      }
+    }
+  },
+
+  fromJSON(_: any): DeleteVolumeGroupSnapshotResponse {
+    return {};
+  },
+
+  toJSON(_: DeleteVolumeGroupSnapshotResponse): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DeleteVolumeGroupSnapshotResponse>, I>>(
+    base?: I,
+  ): DeleteVolumeGroupSnapshotResponse {
+    return DeleteVolumeGroupSnapshotResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<DeleteVolumeGroupSnapshotResponse>, I>>(
+    _: I,
+  ): DeleteVolumeGroupSnapshotResponse {
+    const message = createBaseDeleteVolumeGroupSnapshotResponse();
+    return message;
+  },
+};
+
+function createBaseGetVolumeGroupSnapshotRequest(): GetVolumeGroupSnapshotRequest {
+  return { groupSnapshotId: "", snapshotIds: [], secrets: {} };
+}
+
+export const GetVolumeGroupSnapshotRequest = {
+  encode(message: GetVolumeGroupSnapshotRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.groupSnapshotId !== "") {
+      writer.uint32(10).string(message.groupSnapshotId);
+    }
+    for (const v of message.snapshotIds) {
+      writer.uint32(18).string(v!);
+    }
+    Object.entries(message.secrets).forEach(([key, value]) => {
+      GetVolumeGroupSnapshotRequest_SecretsEntry.encode({ key: key as any, value }, writer.uint32(26).fork()).ldelim();
+    });
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetVolumeGroupSnapshotRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetVolumeGroupSnapshotRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.groupSnapshotId = reader.string();
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.snapshotIds.push(reader.string());
+          continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
+          const entry3 = GetVolumeGroupSnapshotRequest_SecretsEntry.decode(reader, reader.uint32());
+          if (entry3.value !== undefined) {
+            message.secrets[entry3.key] = entry3.value;
+          }
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  // encodeTransform encodes a source of message objects.
+  // Transform<GetVolumeGroupSnapshotRequest, Uint8Array>
+  async *encodeTransform(
+    source:
+      | AsyncIterable<GetVolumeGroupSnapshotRequest | GetVolumeGroupSnapshotRequest[]>
+      | Iterable<GetVolumeGroupSnapshotRequest | GetVolumeGroupSnapshotRequest[]>,
+  ): AsyncIterable<Uint8Array> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [GetVolumeGroupSnapshotRequest.encode(p).finish()];
+        }
+      } else {
+        yield* [GetVolumeGroupSnapshotRequest.encode(pkt).finish()];
+      }
+    }
+  },
+
+  // decodeTransform decodes a source of encoded messages.
+  // Transform<Uint8Array, GetVolumeGroupSnapshotRequest>
+  async *decodeTransform(
+    source: AsyncIterable<Uint8Array | Uint8Array[]> | Iterable<Uint8Array | Uint8Array[]>,
+  ): AsyncIterable<GetVolumeGroupSnapshotRequest> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [GetVolumeGroupSnapshotRequest.decode(p)];
+        }
+      } else {
+        yield* [GetVolumeGroupSnapshotRequest.decode(pkt)];
+      }
+    }
+  },
+
+  fromJSON(object: any): GetVolumeGroupSnapshotRequest {
+    return {
+      groupSnapshotId: isSet(object.groupSnapshotId) ? String(object.groupSnapshotId) : "",
+      snapshotIds: Array.isArray(object?.snapshotIds) ? object.snapshotIds.map((e: any) => String(e)) : [],
+      secrets: isObject(object.secrets)
+        ? Object.entries(object.secrets).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+          acc[key] = String(value);
+          return acc;
+        }, {})
+        : {},
+    };
+  },
+
+  toJSON(message: GetVolumeGroupSnapshotRequest): unknown {
+    const obj: any = {};
+    message.groupSnapshotId !== undefined && (obj.groupSnapshotId = message.groupSnapshotId);
+    if (message.snapshotIds) {
+      obj.snapshotIds = message.snapshotIds.map((e) => e);
+    } else {
+      obj.snapshotIds = [];
+    }
+    obj.secrets = {};
+    if (message.secrets) {
+      Object.entries(message.secrets).forEach(([k, v]) => {
+        obj.secrets[k] = v;
+      });
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetVolumeGroupSnapshotRequest>, I>>(base?: I): GetVolumeGroupSnapshotRequest {
+    return GetVolumeGroupSnapshotRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<GetVolumeGroupSnapshotRequest>, I>>(
+    object: I,
+  ): GetVolumeGroupSnapshotRequest {
+    const message = createBaseGetVolumeGroupSnapshotRequest();
+    message.groupSnapshotId = object.groupSnapshotId ?? "";
+    message.snapshotIds = object.snapshotIds?.map((e) => e) || [];
+    message.secrets = Object.entries(object.secrets ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = String(value);
+      }
+      return acc;
+    }, {});
+    return message;
+  },
+};
+
+function createBaseGetVolumeGroupSnapshotRequest_SecretsEntry(): GetVolumeGroupSnapshotRequest_SecretsEntry {
+  return { key: "", value: "" };
+}
+
+export const GetVolumeGroupSnapshotRequest_SecretsEntry = {
+  encode(message: GetVolumeGroupSnapshotRequest_SecretsEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetVolumeGroupSnapshotRequest_SecretsEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetVolumeGroupSnapshotRequest_SecretsEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  // encodeTransform encodes a source of message objects.
+  // Transform<GetVolumeGroupSnapshotRequest_SecretsEntry, Uint8Array>
+  async *encodeTransform(
+    source:
+      | AsyncIterable<GetVolumeGroupSnapshotRequest_SecretsEntry | GetVolumeGroupSnapshotRequest_SecretsEntry[]>
+      | Iterable<GetVolumeGroupSnapshotRequest_SecretsEntry | GetVolumeGroupSnapshotRequest_SecretsEntry[]>,
+  ): AsyncIterable<Uint8Array> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [GetVolumeGroupSnapshotRequest_SecretsEntry.encode(p).finish()];
+        }
+      } else {
+        yield* [GetVolumeGroupSnapshotRequest_SecretsEntry.encode(pkt).finish()];
+      }
+    }
+  },
+
+  // decodeTransform decodes a source of encoded messages.
+  // Transform<Uint8Array, GetVolumeGroupSnapshotRequest_SecretsEntry>
+  async *decodeTransform(
+    source: AsyncIterable<Uint8Array | Uint8Array[]> | Iterable<Uint8Array | Uint8Array[]>,
+  ): AsyncIterable<GetVolumeGroupSnapshotRequest_SecretsEntry> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [GetVolumeGroupSnapshotRequest_SecretsEntry.decode(p)];
+        }
+      } else {
+        yield* [GetVolumeGroupSnapshotRequest_SecretsEntry.decode(pkt)];
+      }
+    }
+  },
+
+  fromJSON(object: any): GetVolumeGroupSnapshotRequest_SecretsEntry {
+    return { key: isSet(object.key) ? String(object.key) : "", value: isSet(object.value) ? String(object.value) : "" };
+  },
+
+  toJSON(message: GetVolumeGroupSnapshotRequest_SecretsEntry): unknown {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetVolumeGroupSnapshotRequest_SecretsEntry>, I>>(
+    base?: I,
+  ): GetVolumeGroupSnapshotRequest_SecretsEntry {
+    return GetVolumeGroupSnapshotRequest_SecretsEntry.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<GetVolumeGroupSnapshotRequest_SecretsEntry>, I>>(
+    object: I,
+  ): GetVolumeGroupSnapshotRequest_SecretsEntry {
+    const message = createBaseGetVolumeGroupSnapshotRequest_SecretsEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBaseGetVolumeGroupSnapshotResponse(): GetVolumeGroupSnapshotResponse {
+  return { groupSnapshot: undefined };
+}
+
+export const GetVolumeGroupSnapshotResponse = {
+  encode(message: GetVolumeGroupSnapshotResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.groupSnapshot !== undefined) {
+      VolumeGroupSnapshot.encode(message.groupSnapshot, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetVolumeGroupSnapshotResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetVolumeGroupSnapshotResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.groupSnapshot = VolumeGroupSnapshot.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  // encodeTransform encodes a source of message objects.
+  // Transform<GetVolumeGroupSnapshotResponse, Uint8Array>
+  async *encodeTransform(
+    source:
+      | AsyncIterable<GetVolumeGroupSnapshotResponse | GetVolumeGroupSnapshotResponse[]>
+      | Iterable<GetVolumeGroupSnapshotResponse | GetVolumeGroupSnapshotResponse[]>,
+  ): AsyncIterable<Uint8Array> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [GetVolumeGroupSnapshotResponse.encode(p).finish()];
+        }
+      } else {
+        yield* [GetVolumeGroupSnapshotResponse.encode(pkt).finish()];
+      }
+    }
+  },
+
+  // decodeTransform decodes a source of encoded messages.
+  // Transform<Uint8Array, GetVolumeGroupSnapshotResponse>
+  async *decodeTransform(
+    source: AsyncIterable<Uint8Array | Uint8Array[]> | Iterable<Uint8Array | Uint8Array[]>,
+  ): AsyncIterable<GetVolumeGroupSnapshotResponse> {
+    for await (const pkt of source) {
+      if (Array.isArray(pkt)) {
+        for (const p of pkt) {
+          yield* [GetVolumeGroupSnapshotResponse.decode(p)];
+        }
+      } else {
+        yield* [GetVolumeGroupSnapshotResponse.decode(pkt)];
+      }
+    }
+  },
+
+  fromJSON(object: any): GetVolumeGroupSnapshotResponse {
+    return {
+      groupSnapshot: isSet(object.groupSnapshot) ? VolumeGroupSnapshot.fromJSON(object.groupSnapshot) : undefined,
+    };
+  },
+
+  toJSON(message: GetVolumeGroupSnapshotResponse): unknown {
+    const obj: any = {};
+    message.groupSnapshot !== undefined &&
+      (obj.groupSnapshot = message.groupSnapshot ? VolumeGroupSnapshot.toJSON(message.groupSnapshot) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetVolumeGroupSnapshotResponse>, I>>(base?: I): GetVolumeGroupSnapshotResponse {
+    return GetVolumeGroupSnapshotResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<GetVolumeGroupSnapshotResponse>, I>>(
+    object: I,
+  ): GetVolumeGroupSnapshotResponse {
+    const message = createBaseGetVolumeGroupSnapshotResponse();
+    message.groupSnapshot = (object.groupSnapshot !== undefined && object.groupSnapshot !== null)
+      ? VolumeGroupSnapshot.fromPartial(object.groupSnapshot)
+      : undefined;
+    return message;
+  },
+};
+
 export interface Identity {
-  GetPluginInfo(request: GetPluginInfoRequest): Promise<GetPluginInfoResponse>;
-  GetPluginCapabilities(request: GetPluginCapabilitiesRequest): Promise<GetPluginCapabilitiesResponse>;
-  Probe(request: ProbeRequest): Promise<ProbeResponse>;
+  GetPluginInfo(request: GetPluginInfoRequest, abortSignal?: AbortSignal): Promise<GetPluginInfoResponse>;
+  GetPluginCapabilities(
+    request: GetPluginCapabilitiesRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<GetPluginCapabilitiesResponse>;
+  Probe(request: ProbeRequest, abortSignal?: AbortSignal): Promise<ProbeResponse>;
 }
 
 export class IdentityClientImpl implements Identity {
@@ -12922,22 +15830,25 @@ export class IdentityClientImpl implements Identity {
     this.GetPluginCapabilities = this.GetPluginCapabilities.bind(this);
     this.Probe = this.Probe.bind(this);
   }
-  GetPluginInfo(request: GetPluginInfoRequest): Promise<GetPluginInfoResponse> {
+  GetPluginInfo(request: GetPluginInfoRequest, abortSignal?: AbortSignal): Promise<GetPluginInfoResponse> {
     const data = GetPluginInfoRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "GetPluginInfo", data);
-    return promise.then((data) => GetPluginInfoResponse.decode(new _m0.Reader(data)));
+    const promise = this.rpc.request(this.service, "GetPluginInfo", data, abortSignal || undefined);
+    return promise.then((data) => GetPluginInfoResponse.decode(_m0.Reader.create(data)));
   }
 
-  GetPluginCapabilities(request: GetPluginCapabilitiesRequest): Promise<GetPluginCapabilitiesResponse> {
+  GetPluginCapabilities(
+    request: GetPluginCapabilitiesRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<GetPluginCapabilitiesResponse> {
     const data = GetPluginCapabilitiesRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "GetPluginCapabilities", data);
-    return promise.then((data) => GetPluginCapabilitiesResponse.decode(new _m0.Reader(data)));
+    const promise = this.rpc.request(this.service, "GetPluginCapabilities", data, abortSignal || undefined);
+    return promise.then((data) => GetPluginCapabilitiesResponse.decode(_m0.Reader.create(data)));
   }
 
-  Probe(request: ProbeRequest): Promise<ProbeResponse> {
+  Probe(request: ProbeRequest, abortSignal?: AbortSignal): Promise<ProbeResponse> {
     const data = ProbeRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "Probe", data);
-    return promise.then((data) => ProbeResponse.decode(new _m0.Reader(data)));
+    const promise = this.rpc.request(this.service, "Probe", data, abortSignal || undefined);
+    return promise.then((data) => ProbeResponse.decode(_m0.Reader.create(data)));
   }
 }
 
@@ -12952,7 +15863,7 @@ export const IdentityDefinition = {
       requestStream: false,
       responseType: GetPluginInfoResponse,
       responseStream: false,
-      options: {},
+      options: { _unknownFields: {} },
     },
     getPluginCapabilities: {
       name: "GetPluginCapabilities",
@@ -12960,7 +15871,7 @@ export const IdentityDefinition = {
       requestStream: false,
       responseType: GetPluginCapabilitiesResponse,
       responseStream: false,
-      options: {},
+      options: { _unknownFields: {} },
     },
     probe: {
       name: "Probe",
@@ -12968,25 +15879,43 @@ export const IdentityDefinition = {
       requestStream: false,
       responseType: ProbeResponse,
       responseStream: false,
-      options: {},
+      options: { _unknownFields: {} },
     },
   },
 } as const;
 
 export interface Controller {
-  CreateVolume(request: CreateVolumeRequest): Promise<CreateVolumeResponse>;
-  DeleteVolume(request: DeleteVolumeRequest): Promise<DeleteVolumeResponse>;
-  ControllerPublishVolume(request: ControllerPublishVolumeRequest): Promise<ControllerPublishVolumeResponse>;
-  ControllerUnpublishVolume(request: ControllerUnpublishVolumeRequest): Promise<ControllerUnpublishVolumeResponse>;
-  ValidateVolumeCapabilities(request: ValidateVolumeCapabilitiesRequest): Promise<ValidateVolumeCapabilitiesResponse>;
-  ListVolumes(request: ListVolumesRequest): Promise<ListVolumesResponse>;
-  GetCapacity(request: GetCapacityRequest): Promise<GetCapacityResponse>;
-  ControllerGetCapabilities(request: ControllerGetCapabilitiesRequest): Promise<ControllerGetCapabilitiesResponse>;
-  CreateSnapshot(request: CreateSnapshotRequest): Promise<CreateSnapshotResponse>;
-  DeleteSnapshot(request: DeleteSnapshotRequest): Promise<DeleteSnapshotResponse>;
-  ListSnapshots(request: ListSnapshotsRequest): Promise<ListSnapshotsResponse>;
-  ControllerExpandVolume(request: ControllerExpandVolumeRequest): Promise<ControllerExpandVolumeResponse>;
-  ControllerGetVolume(request: ControllerGetVolumeRequest): Promise<ControllerGetVolumeResponse>;
+  CreateVolume(request: CreateVolumeRequest, abortSignal?: AbortSignal): Promise<CreateVolumeResponse>;
+  DeleteVolume(request: DeleteVolumeRequest, abortSignal?: AbortSignal): Promise<DeleteVolumeResponse>;
+  ControllerPublishVolume(
+    request: ControllerPublishVolumeRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<ControllerPublishVolumeResponse>;
+  ControllerUnpublishVolume(
+    request: ControllerUnpublishVolumeRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<ControllerUnpublishVolumeResponse>;
+  ValidateVolumeCapabilities(
+    request: ValidateVolumeCapabilitiesRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<ValidateVolumeCapabilitiesResponse>;
+  ListVolumes(request: ListVolumesRequest, abortSignal?: AbortSignal): Promise<ListVolumesResponse>;
+  GetCapacity(request: GetCapacityRequest, abortSignal?: AbortSignal): Promise<GetCapacityResponse>;
+  ControllerGetCapabilities(
+    request: ControllerGetCapabilitiesRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<ControllerGetCapabilitiesResponse>;
+  CreateSnapshot(request: CreateSnapshotRequest, abortSignal?: AbortSignal): Promise<CreateSnapshotResponse>;
+  DeleteSnapshot(request: DeleteSnapshotRequest, abortSignal?: AbortSignal): Promise<DeleteSnapshotResponse>;
+  ListSnapshots(request: ListSnapshotsRequest, abortSignal?: AbortSignal): Promise<ListSnapshotsResponse>;
+  ControllerExpandVolume(
+    request: ControllerExpandVolumeRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<ControllerExpandVolumeResponse>;
+  ControllerGetVolume(
+    request: ControllerGetVolumeRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<ControllerGetVolumeResponse>;
 }
 
 export class ControllerClientImpl implements Controller {
@@ -13009,82 +15938,100 @@ export class ControllerClientImpl implements Controller {
     this.ControllerExpandVolume = this.ControllerExpandVolume.bind(this);
     this.ControllerGetVolume = this.ControllerGetVolume.bind(this);
   }
-  CreateVolume(request: CreateVolumeRequest): Promise<CreateVolumeResponse> {
+  CreateVolume(request: CreateVolumeRequest, abortSignal?: AbortSignal): Promise<CreateVolumeResponse> {
     const data = CreateVolumeRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "CreateVolume", data);
-    return promise.then((data) => CreateVolumeResponse.decode(new _m0.Reader(data)));
+    const promise = this.rpc.request(this.service, "CreateVolume", data, abortSignal || undefined);
+    return promise.then((data) => CreateVolumeResponse.decode(_m0.Reader.create(data)));
   }
 
-  DeleteVolume(request: DeleteVolumeRequest): Promise<DeleteVolumeResponse> {
+  DeleteVolume(request: DeleteVolumeRequest, abortSignal?: AbortSignal): Promise<DeleteVolumeResponse> {
     const data = DeleteVolumeRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "DeleteVolume", data);
-    return promise.then((data) => DeleteVolumeResponse.decode(new _m0.Reader(data)));
+    const promise = this.rpc.request(this.service, "DeleteVolume", data, abortSignal || undefined);
+    return promise.then((data) => DeleteVolumeResponse.decode(_m0.Reader.create(data)));
   }
 
-  ControllerPublishVolume(request: ControllerPublishVolumeRequest): Promise<ControllerPublishVolumeResponse> {
+  ControllerPublishVolume(
+    request: ControllerPublishVolumeRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<ControllerPublishVolumeResponse> {
     const data = ControllerPublishVolumeRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "ControllerPublishVolume", data);
-    return promise.then((data) => ControllerPublishVolumeResponse.decode(new _m0.Reader(data)));
+    const promise = this.rpc.request(this.service, "ControllerPublishVolume", data, abortSignal || undefined);
+    return promise.then((data) => ControllerPublishVolumeResponse.decode(_m0.Reader.create(data)));
   }
 
-  ControllerUnpublishVolume(request: ControllerUnpublishVolumeRequest): Promise<ControllerUnpublishVolumeResponse> {
+  ControllerUnpublishVolume(
+    request: ControllerUnpublishVolumeRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<ControllerUnpublishVolumeResponse> {
     const data = ControllerUnpublishVolumeRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "ControllerUnpublishVolume", data);
-    return promise.then((data) => ControllerUnpublishVolumeResponse.decode(new _m0.Reader(data)));
+    const promise = this.rpc.request(this.service, "ControllerUnpublishVolume", data, abortSignal || undefined);
+    return promise.then((data) => ControllerUnpublishVolumeResponse.decode(_m0.Reader.create(data)));
   }
 
-  ValidateVolumeCapabilities(request: ValidateVolumeCapabilitiesRequest): Promise<ValidateVolumeCapabilitiesResponse> {
+  ValidateVolumeCapabilities(
+    request: ValidateVolumeCapabilitiesRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<ValidateVolumeCapabilitiesResponse> {
     const data = ValidateVolumeCapabilitiesRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "ValidateVolumeCapabilities", data);
-    return promise.then((data) => ValidateVolumeCapabilitiesResponse.decode(new _m0.Reader(data)));
+    const promise = this.rpc.request(this.service, "ValidateVolumeCapabilities", data, abortSignal || undefined);
+    return promise.then((data) => ValidateVolumeCapabilitiesResponse.decode(_m0.Reader.create(data)));
   }
 
-  ListVolumes(request: ListVolumesRequest): Promise<ListVolumesResponse> {
+  ListVolumes(request: ListVolumesRequest, abortSignal?: AbortSignal): Promise<ListVolumesResponse> {
     const data = ListVolumesRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "ListVolumes", data);
-    return promise.then((data) => ListVolumesResponse.decode(new _m0.Reader(data)));
+    const promise = this.rpc.request(this.service, "ListVolumes", data, abortSignal || undefined);
+    return promise.then((data) => ListVolumesResponse.decode(_m0.Reader.create(data)));
   }
 
-  GetCapacity(request: GetCapacityRequest): Promise<GetCapacityResponse> {
+  GetCapacity(request: GetCapacityRequest, abortSignal?: AbortSignal): Promise<GetCapacityResponse> {
     const data = GetCapacityRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "GetCapacity", data);
-    return promise.then((data) => GetCapacityResponse.decode(new _m0.Reader(data)));
+    const promise = this.rpc.request(this.service, "GetCapacity", data, abortSignal || undefined);
+    return promise.then((data) => GetCapacityResponse.decode(_m0.Reader.create(data)));
   }
 
-  ControllerGetCapabilities(request: ControllerGetCapabilitiesRequest): Promise<ControllerGetCapabilitiesResponse> {
+  ControllerGetCapabilities(
+    request: ControllerGetCapabilitiesRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<ControllerGetCapabilitiesResponse> {
     const data = ControllerGetCapabilitiesRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "ControllerGetCapabilities", data);
-    return promise.then((data) => ControllerGetCapabilitiesResponse.decode(new _m0.Reader(data)));
+    const promise = this.rpc.request(this.service, "ControllerGetCapabilities", data, abortSignal || undefined);
+    return promise.then((data) => ControllerGetCapabilitiesResponse.decode(_m0.Reader.create(data)));
   }
 
-  CreateSnapshot(request: CreateSnapshotRequest): Promise<CreateSnapshotResponse> {
+  CreateSnapshot(request: CreateSnapshotRequest, abortSignal?: AbortSignal): Promise<CreateSnapshotResponse> {
     const data = CreateSnapshotRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "CreateSnapshot", data);
-    return promise.then((data) => CreateSnapshotResponse.decode(new _m0.Reader(data)));
+    const promise = this.rpc.request(this.service, "CreateSnapshot", data, abortSignal || undefined);
+    return promise.then((data) => CreateSnapshotResponse.decode(_m0.Reader.create(data)));
   }
 
-  DeleteSnapshot(request: DeleteSnapshotRequest): Promise<DeleteSnapshotResponse> {
+  DeleteSnapshot(request: DeleteSnapshotRequest, abortSignal?: AbortSignal): Promise<DeleteSnapshotResponse> {
     const data = DeleteSnapshotRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "DeleteSnapshot", data);
-    return promise.then((data) => DeleteSnapshotResponse.decode(new _m0.Reader(data)));
+    const promise = this.rpc.request(this.service, "DeleteSnapshot", data, abortSignal || undefined);
+    return promise.then((data) => DeleteSnapshotResponse.decode(_m0.Reader.create(data)));
   }
 
-  ListSnapshots(request: ListSnapshotsRequest): Promise<ListSnapshotsResponse> {
+  ListSnapshots(request: ListSnapshotsRequest, abortSignal?: AbortSignal): Promise<ListSnapshotsResponse> {
     const data = ListSnapshotsRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "ListSnapshots", data);
-    return promise.then((data) => ListSnapshotsResponse.decode(new _m0.Reader(data)));
+    const promise = this.rpc.request(this.service, "ListSnapshots", data, abortSignal || undefined);
+    return promise.then((data) => ListSnapshotsResponse.decode(_m0.Reader.create(data)));
   }
 
-  ControllerExpandVolume(request: ControllerExpandVolumeRequest): Promise<ControllerExpandVolumeResponse> {
+  ControllerExpandVolume(
+    request: ControllerExpandVolumeRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<ControllerExpandVolumeResponse> {
     const data = ControllerExpandVolumeRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "ControllerExpandVolume", data);
-    return promise.then((data) => ControllerExpandVolumeResponse.decode(new _m0.Reader(data)));
+    const promise = this.rpc.request(this.service, "ControllerExpandVolume", data, abortSignal || undefined);
+    return promise.then((data) => ControllerExpandVolumeResponse.decode(_m0.Reader.create(data)));
   }
 
-  ControllerGetVolume(request: ControllerGetVolumeRequest): Promise<ControllerGetVolumeResponse> {
+  ControllerGetVolume(
+    request: ControllerGetVolumeRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<ControllerGetVolumeResponse> {
     const data = ControllerGetVolumeRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "ControllerGetVolume", data);
-    return promise.then((data) => ControllerGetVolumeResponse.decode(new _m0.Reader(data)));
+    const promise = this.rpc.request(this.service, "ControllerGetVolume", data, abortSignal || undefined);
+    return promise.then((data) => ControllerGetVolumeResponse.decode(_m0.Reader.create(data)));
   }
 }
 
@@ -13099,7 +16046,7 @@ export const ControllerDefinition = {
       requestStream: false,
       responseType: CreateVolumeResponse,
       responseStream: false,
-      options: {},
+      options: { _unknownFields: {} },
     },
     deleteVolume: {
       name: "DeleteVolume",
@@ -13107,7 +16054,7 @@ export const ControllerDefinition = {
       requestStream: false,
       responseType: DeleteVolumeResponse,
       responseStream: false,
-      options: {},
+      options: { _unknownFields: {} },
     },
     controllerPublishVolume: {
       name: "ControllerPublishVolume",
@@ -13115,7 +16062,7 @@ export const ControllerDefinition = {
       requestStream: false,
       responseType: ControllerPublishVolumeResponse,
       responseStream: false,
-      options: {},
+      options: { _unknownFields: {} },
     },
     controllerUnpublishVolume: {
       name: "ControllerUnpublishVolume",
@@ -13123,7 +16070,7 @@ export const ControllerDefinition = {
       requestStream: false,
       responseType: ControllerUnpublishVolumeResponse,
       responseStream: false,
-      options: {},
+      options: { _unknownFields: {} },
     },
     validateVolumeCapabilities: {
       name: "ValidateVolumeCapabilities",
@@ -13131,7 +16078,7 @@ export const ControllerDefinition = {
       requestStream: false,
       responseType: ValidateVolumeCapabilitiesResponse,
       responseStream: false,
-      options: {},
+      options: { _unknownFields: {} },
     },
     listVolumes: {
       name: "ListVolumes",
@@ -13139,7 +16086,7 @@ export const ControllerDefinition = {
       requestStream: false,
       responseType: ListVolumesResponse,
       responseStream: false,
-      options: {},
+      options: { _unknownFields: {} },
     },
     getCapacity: {
       name: "GetCapacity",
@@ -13147,7 +16094,7 @@ export const ControllerDefinition = {
       requestStream: false,
       responseType: GetCapacityResponse,
       responseStream: false,
-      options: {},
+      options: { _unknownFields: {} },
     },
     controllerGetCapabilities: {
       name: "ControllerGetCapabilities",
@@ -13155,7 +16102,7 @@ export const ControllerDefinition = {
       requestStream: false,
       responseType: ControllerGetCapabilitiesResponse,
       responseStream: false,
-      options: {},
+      options: { _unknownFields: {} },
     },
     createSnapshot: {
       name: "CreateSnapshot",
@@ -13163,7 +16110,7 @@ export const ControllerDefinition = {
       requestStream: false,
       responseType: CreateSnapshotResponse,
       responseStream: false,
-      options: {},
+      options: { _unknownFields: {} },
     },
     deleteSnapshot: {
       name: "DeleteSnapshot",
@@ -13171,7 +16118,7 @@ export const ControllerDefinition = {
       requestStream: false,
       responseType: DeleteSnapshotResponse,
       responseStream: false,
-      options: {},
+      options: { _unknownFields: {} },
     },
     listSnapshots: {
       name: "ListSnapshots",
@@ -13179,7 +16126,7 @@ export const ControllerDefinition = {
       requestStream: false,
       responseType: ListSnapshotsResponse,
       responseStream: false,
-      options: {},
+      options: { _unknownFields: {} },
     },
     controllerExpandVolume: {
       name: "ControllerExpandVolume",
@@ -13187,7 +16134,7 @@ export const ControllerDefinition = {
       requestStream: false,
       responseType: ControllerExpandVolumeResponse,
       responseStream: false,
-      options: {},
+      options: { _unknownFields: {} },
     },
     controllerGetVolume: {
       name: "ControllerGetVolume",
@@ -13195,20 +16142,136 @@ export const ControllerDefinition = {
       requestStream: false,
       responseType: ControllerGetVolumeResponse,
       responseStream: false,
-      options: {},
+      options: { _unknownFields: { 8480: [new Uint8Array([1])] } },
+    },
+  },
+} as const;
+
+export interface GroupController {
+  GroupControllerGetCapabilities(
+    request: GroupControllerGetCapabilitiesRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<GroupControllerGetCapabilitiesResponse>;
+  CreateVolumeGroupSnapshot(
+    request: CreateVolumeGroupSnapshotRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<CreateVolumeGroupSnapshotResponse>;
+  DeleteVolumeGroupSnapshot(
+    request: DeleteVolumeGroupSnapshotRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<DeleteVolumeGroupSnapshotResponse>;
+  GetVolumeGroupSnapshot(
+    request: GetVolumeGroupSnapshotRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<GetVolumeGroupSnapshotResponse>;
+}
+
+export class GroupControllerClientImpl implements GroupController {
+  private readonly rpc: Rpc;
+  private readonly service: string;
+  constructor(rpc: Rpc, opts?: { service?: string }) {
+    this.service = opts?.service || "csi.v1.GroupController";
+    this.rpc = rpc;
+    this.GroupControllerGetCapabilities = this.GroupControllerGetCapabilities.bind(this);
+    this.CreateVolumeGroupSnapshot = this.CreateVolumeGroupSnapshot.bind(this);
+    this.DeleteVolumeGroupSnapshot = this.DeleteVolumeGroupSnapshot.bind(this);
+    this.GetVolumeGroupSnapshot = this.GetVolumeGroupSnapshot.bind(this);
+  }
+  GroupControllerGetCapabilities(
+    request: GroupControllerGetCapabilitiesRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<GroupControllerGetCapabilitiesResponse> {
+    const data = GroupControllerGetCapabilitiesRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "GroupControllerGetCapabilities", data, abortSignal || undefined);
+    return promise.then((data) => GroupControllerGetCapabilitiesResponse.decode(_m0.Reader.create(data)));
+  }
+
+  CreateVolumeGroupSnapshot(
+    request: CreateVolumeGroupSnapshotRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<CreateVolumeGroupSnapshotResponse> {
+    const data = CreateVolumeGroupSnapshotRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "CreateVolumeGroupSnapshot", data, abortSignal || undefined);
+    return promise.then((data) => CreateVolumeGroupSnapshotResponse.decode(_m0.Reader.create(data)));
+  }
+
+  DeleteVolumeGroupSnapshot(
+    request: DeleteVolumeGroupSnapshotRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<DeleteVolumeGroupSnapshotResponse> {
+    const data = DeleteVolumeGroupSnapshotRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "DeleteVolumeGroupSnapshot", data, abortSignal || undefined);
+    return promise.then((data) => DeleteVolumeGroupSnapshotResponse.decode(_m0.Reader.create(data)));
+  }
+
+  GetVolumeGroupSnapshot(
+    request: GetVolumeGroupSnapshotRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<GetVolumeGroupSnapshotResponse> {
+    const data = GetVolumeGroupSnapshotRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "GetVolumeGroupSnapshot", data, abortSignal || undefined);
+    return promise.then((data) => GetVolumeGroupSnapshotResponse.decode(_m0.Reader.create(data)));
+  }
+}
+
+export type GroupControllerDefinition = typeof GroupControllerDefinition;
+export const GroupControllerDefinition = {
+  name: "GroupController",
+  fullName: "csi.v1.GroupController",
+  methods: {
+    groupControllerGetCapabilities: {
+      name: "GroupControllerGetCapabilities",
+      requestType: GroupControllerGetCapabilitiesRequest,
+      requestStream: false,
+      responseType: GroupControllerGetCapabilitiesResponse,
+      responseStream: false,
+      options: { _unknownFields: {} },
+    },
+    createVolumeGroupSnapshot: {
+      name: "CreateVolumeGroupSnapshot",
+      requestType: CreateVolumeGroupSnapshotRequest,
+      requestStream: false,
+      responseType: CreateVolumeGroupSnapshotResponse,
+      responseStream: false,
+      options: { _unknownFields: { 8480: [new Uint8Array([1])] } },
+    },
+    deleteVolumeGroupSnapshot: {
+      name: "DeleteVolumeGroupSnapshot",
+      requestType: DeleteVolumeGroupSnapshotRequest,
+      requestStream: false,
+      responseType: DeleteVolumeGroupSnapshotResponse,
+      responseStream: false,
+      options: { _unknownFields: { 8480: [new Uint8Array([1])] } },
+    },
+    getVolumeGroupSnapshot: {
+      name: "GetVolumeGroupSnapshot",
+      requestType: GetVolumeGroupSnapshotRequest,
+      requestStream: false,
+      responseType: GetVolumeGroupSnapshotResponse,
+      responseStream: false,
+      options: { _unknownFields: { 8480: [new Uint8Array([1])] } },
     },
   },
 } as const;
 
 export interface Node {
-  NodeStageVolume(request: NodeStageVolumeRequest): Promise<NodeStageVolumeResponse>;
-  NodeUnstageVolume(request: NodeUnstageVolumeRequest): Promise<NodeUnstageVolumeResponse>;
-  NodePublishVolume(request: NodePublishVolumeRequest): Promise<NodePublishVolumeResponse>;
-  NodeUnpublishVolume(request: NodeUnpublishVolumeRequest): Promise<NodeUnpublishVolumeResponse>;
-  NodeGetVolumeStats(request: NodeGetVolumeStatsRequest): Promise<NodeGetVolumeStatsResponse>;
-  NodeExpandVolume(request: NodeExpandVolumeRequest): Promise<NodeExpandVolumeResponse>;
-  NodeGetCapabilities(request: NodeGetCapabilitiesRequest): Promise<NodeGetCapabilitiesResponse>;
-  NodeGetInfo(request: NodeGetInfoRequest): Promise<NodeGetInfoResponse>;
+  NodeStageVolume(request: NodeStageVolumeRequest, abortSignal?: AbortSignal): Promise<NodeStageVolumeResponse>;
+  NodeUnstageVolume(request: NodeUnstageVolumeRequest, abortSignal?: AbortSignal): Promise<NodeUnstageVolumeResponse>;
+  NodePublishVolume(request: NodePublishVolumeRequest, abortSignal?: AbortSignal): Promise<NodePublishVolumeResponse>;
+  NodeUnpublishVolume(
+    request: NodeUnpublishVolumeRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<NodeUnpublishVolumeResponse>;
+  NodeGetVolumeStats(
+    request: NodeGetVolumeStatsRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<NodeGetVolumeStatsResponse>;
+  NodeExpandVolume(request: NodeExpandVolumeRequest, abortSignal?: AbortSignal): Promise<NodeExpandVolumeResponse>;
+  NodeGetCapabilities(
+    request: NodeGetCapabilitiesRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<NodeGetCapabilitiesResponse>;
+  NodeGetInfo(request: NodeGetInfoRequest, abortSignal?: AbortSignal): Promise<NodeGetInfoResponse>;
 }
 
 export class NodeClientImpl implements Node {
@@ -13226,52 +16289,61 @@ export class NodeClientImpl implements Node {
     this.NodeGetCapabilities = this.NodeGetCapabilities.bind(this);
     this.NodeGetInfo = this.NodeGetInfo.bind(this);
   }
-  NodeStageVolume(request: NodeStageVolumeRequest): Promise<NodeStageVolumeResponse> {
+  NodeStageVolume(request: NodeStageVolumeRequest, abortSignal?: AbortSignal): Promise<NodeStageVolumeResponse> {
     const data = NodeStageVolumeRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "NodeStageVolume", data);
-    return promise.then((data) => NodeStageVolumeResponse.decode(new _m0.Reader(data)));
+    const promise = this.rpc.request(this.service, "NodeStageVolume", data, abortSignal || undefined);
+    return promise.then((data) => NodeStageVolumeResponse.decode(_m0.Reader.create(data)));
   }
 
-  NodeUnstageVolume(request: NodeUnstageVolumeRequest): Promise<NodeUnstageVolumeResponse> {
+  NodeUnstageVolume(request: NodeUnstageVolumeRequest, abortSignal?: AbortSignal): Promise<NodeUnstageVolumeResponse> {
     const data = NodeUnstageVolumeRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "NodeUnstageVolume", data);
-    return promise.then((data) => NodeUnstageVolumeResponse.decode(new _m0.Reader(data)));
+    const promise = this.rpc.request(this.service, "NodeUnstageVolume", data, abortSignal || undefined);
+    return promise.then((data) => NodeUnstageVolumeResponse.decode(_m0.Reader.create(data)));
   }
 
-  NodePublishVolume(request: NodePublishVolumeRequest): Promise<NodePublishVolumeResponse> {
+  NodePublishVolume(request: NodePublishVolumeRequest, abortSignal?: AbortSignal): Promise<NodePublishVolumeResponse> {
     const data = NodePublishVolumeRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "NodePublishVolume", data);
-    return promise.then((data) => NodePublishVolumeResponse.decode(new _m0.Reader(data)));
+    const promise = this.rpc.request(this.service, "NodePublishVolume", data, abortSignal || undefined);
+    return promise.then((data) => NodePublishVolumeResponse.decode(_m0.Reader.create(data)));
   }
 
-  NodeUnpublishVolume(request: NodeUnpublishVolumeRequest): Promise<NodeUnpublishVolumeResponse> {
+  NodeUnpublishVolume(
+    request: NodeUnpublishVolumeRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<NodeUnpublishVolumeResponse> {
     const data = NodeUnpublishVolumeRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "NodeUnpublishVolume", data);
-    return promise.then((data) => NodeUnpublishVolumeResponse.decode(new _m0.Reader(data)));
+    const promise = this.rpc.request(this.service, "NodeUnpublishVolume", data, abortSignal || undefined);
+    return promise.then((data) => NodeUnpublishVolumeResponse.decode(_m0.Reader.create(data)));
   }
 
-  NodeGetVolumeStats(request: NodeGetVolumeStatsRequest): Promise<NodeGetVolumeStatsResponse> {
+  NodeGetVolumeStats(
+    request: NodeGetVolumeStatsRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<NodeGetVolumeStatsResponse> {
     const data = NodeGetVolumeStatsRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "NodeGetVolumeStats", data);
-    return promise.then((data) => NodeGetVolumeStatsResponse.decode(new _m0.Reader(data)));
+    const promise = this.rpc.request(this.service, "NodeGetVolumeStats", data, abortSignal || undefined);
+    return promise.then((data) => NodeGetVolumeStatsResponse.decode(_m0.Reader.create(data)));
   }
 
-  NodeExpandVolume(request: NodeExpandVolumeRequest): Promise<NodeExpandVolumeResponse> {
+  NodeExpandVolume(request: NodeExpandVolumeRequest, abortSignal?: AbortSignal): Promise<NodeExpandVolumeResponse> {
     const data = NodeExpandVolumeRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "NodeExpandVolume", data);
-    return promise.then((data) => NodeExpandVolumeResponse.decode(new _m0.Reader(data)));
+    const promise = this.rpc.request(this.service, "NodeExpandVolume", data, abortSignal || undefined);
+    return promise.then((data) => NodeExpandVolumeResponse.decode(_m0.Reader.create(data)));
   }
 
-  NodeGetCapabilities(request: NodeGetCapabilitiesRequest): Promise<NodeGetCapabilitiesResponse> {
+  NodeGetCapabilities(
+    request: NodeGetCapabilitiesRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<NodeGetCapabilitiesResponse> {
     const data = NodeGetCapabilitiesRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "NodeGetCapabilities", data);
-    return promise.then((data) => NodeGetCapabilitiesResponse.decode(new _m0.Reader(data)));
+    const promise = this.rpc.request(this.service, "NodeGetCapabilities", data, abortSignal || undefined);
+    return promise.then((data) => NodeGetCapabilitiesResponse.decode(_m0.Reader.create(data)));
   }
 
-  NodeGetInfo(request: NodeGetInfoRequest): Promise<NodeGetInfoResponse> {
+  NodeGetInfo(request: NodeGetInfoRequest, abortSignal?: AbortSignal): Promise<NodeGetInfoResponse> {
     const data = NodeGetInfoRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "NodeGetInfo", data);
-    return promise.then((data) => NodeGetInfoResponse.decode(new _m0.Reader(data)));
+    const promise = this.rpc.request(this.service, "NodeGetInfo", data, abortSignal || undefined);
+    return promise.then((data) => NodeGetInfoResponse.decode(_m0.Reader.create(data)));
   }
 }
 
@@ -13286,7 +16358,7 @@ export const NodeDefinition = {
       requestStream: false,
       responseType: NodeStageVolumeResponse,
       responseStream: false,
-      options: {},
+      options: { _unknownFields: {} },
     },
     nodeUnstageVolume: {
       name: "NodeUnstageVolume",
@@ -13294,7 +16366,7 @@ export const NodeDefinition = {
       requestStream: false,
       responseType: NodeUnstageVolumeResponse,
       responseStream: false,
-      options: {},
+      options: { _unknownFields: {} },
     },
     nodePublishVolume: {
       name: "NodePublishVolume",
@@ -13302,7 +16374,7 @@ export const NodeDefinition = {
       requestStream: false,
       responseType: NodePublishVolumeResponse,
       responseStream: false,
-      options: {},
+      options: { _unknownFields: {} },
     },
     nodeUnpublishVolume: {
       name: "NodeUnpublishVolume",
@@ -13310,7 +16382,7 @@ export const NodeDefinition = {
       requestStream: false,
       responseType: NodeUnpublishVolumeResponse,
       responseStream: false,
-      options: {},
+      options: { _unknownFields: {} },
     },
     nodeGetVolumeStats: {
       name: "NodeGetVolumeStats",
@@ -13318,7 +16390,7 @@ export const NodeDefinition = {
       requestStream: false,
       responseType: NodeGetVolumeStatsResponse,
       responseStream: false,
-      options: {},
+      options: { _unknownFields: {} },
     },
     nodeExpandVolume: {
       name: "NodeExpandVolume",
@@ -13326,7 +16398,7 @@ export const NodeDefinition = {
       requestStream: false,
       responseType: NodeExpandVolumeResponse,
       responseStream: false,
-      options: {},
+      options: { _unknownFields: {} },
     },
     nodeGetCapabilities: {
       name: "NodeGetCapabilities",
@@ -13334,7 +16406,7 @@ export const NodeDefinition = {
       requestStream: false,
       responseType: NodeGetCapabilitiesResponse,
       responseStream: false,
-      options: {},
+      options: { _unknownFields: {} },
     },
     nodeGetInfo: {
       name: "NodeGetInfo",
@@ -13342,13 +16414,13 @@ export const NodeDefinition = {
       requestStream: false,
       responseType: NodeGetInfoResponse,
       responseStream: false,
-      options: {},
+      options: { _unknownFields: {} },
     },
   },
 } as const;
 
 interface Rpc {
-  request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;
+  request(service: string, method: string, data: Uint8Array, abortSignal?: AbortSignal): Promise<Uint8Array>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
