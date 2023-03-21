@@ -13,5 +13,6 @@
     "matchManagers": ["gomod"],
     "matchDepTypes": ["replace"],
     "enabled": false
-  }]
+  }],
+  "renovateFork": true
 }
